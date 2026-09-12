@@ -1,183 +1,212 @@
 package io.github.dark1ltg.meridian.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.dark1ltg.meridian.R
-import io.github.dark1ltg.meridian.data.Track
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import kotlin.math.roundToInt
+import io.github.dark1ltg.meridian.data.EngineSnapshot
+import io.github.dark1ltg.meridian.data.TrackRow
+import io.github.dark1ltg.meridian.ui.theme.Card
+import io.github.dark1ltg.meridian.ui.theme.Cream
+import io.github.dark1ltg.meridian.ui.theme.Deep
+import io.github.dark1ltg.meridian.ui.theme.Fill
+import io.github.dark1ltg.meridian.ui.theme.Ink
+import io.github.dark1ltg.meridian.ui.theme.Mute
+import io.github.dark1ltg.meridian.ui.theme.Now
+import io.github.dark1ltg.meridian.ui.theme.Orange
+import io.github.dark1ltg.meridian.ui.theme.Shelf
+import io.github.dark1ltg.meridian.ui.theme.UbuntuCondensed
 
 @Composable
 fun ContextScreen(
-    track: Track,
-    onBack: () -> Unit,
-    onOpenMoodMap: () -> Unit,
-    onOpenWhy: () -> Unit,
+    snapshot: EngineSnapshot,
+    onPlay: (Int) -> Unit,
+    onPlayContext: () -> Unit,
+    onOpenWhy: (Int) -> Unit,
+    onLens: (Float, Float, Float) -> Unit,
+    onPin: (Int, Float, Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val scroll = rememberScrollState()
-    val formatter =
-        remember {
-            DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-                .withZone(ZoneId.systemDefault())
-        }
-    val lastPlayed =
-        remember(track.lastPlayedAt) {
-            track.lastPlayedAt?.let { formatter.format(Instant.ofEpochMilli(it)) }
-                ?: context.getString(R.string.context_never_played)
-        }
-    val skipRate =
-        remember(track.playCount, track.skipCount) {
-            val total = track.playCount + track.skipCount
-            if (total <= 0) context.getString(R.string.context_skip_empty) else "${((track.skipCount.toFloat() / total) * 100f).roundToInt()}%"
-        }
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(MeridianTheme.colors.bg)
-                .verticalScroll(scroll)
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-    ) {
-        ScreenHeader(title = stringResource(R.string.context_title), onBack = onBack)
-        Text(
-            text = track.title,
-            color = MeridianTheme.colors.text,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 16.dp).semantics { heading() },
-        )
-        Text(
-            text = track.artist,
-            color = MeridianTheme.colors.muted,
-            fontSize = 15.sp,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        Text(
-            text = stringResource(R.string.context_album_line, track.album),
-            color = MeridianTheme.colors.muted,
-            fontSize = 13.sp,
-            modifier = Modifier.padding(top = 2.dp),
-        )
-        Spacer(Modifier.height(18.dp))
-        ContextRow(stringResource(R.string.context_energy), "${track.energy.roundToInt()}")
-        ContextRow(stringResource(R.string.context_valence), "${track.valence.roundToInt()}")
-        ContextRow(stringResource(R.string.context_tempo), stringResource(R.string.bpm_value, track.tempo.roundToInt()))
-        ContextRow(stringResource(R.string.context_key), track.key)
-        ContextRow(stringResource(R.string.context_plays), track.playCount.toString())
-        ContextRow(stringResource(R.string.context_skips), track.skipCount.toString())
-        ContextRow(stringResource(R.string.context_skip_rate), skipRate)
-        ContextRow(stringResource(R.string.context_last_played), lastPlayed)
-        ContextRow(
-            stringResource(R.string.context_file),
-            track.uri.lastPathSegment ?: track.uri.toString(),
-        )
-        if (track.lyrics.isNotBlank()) {
+    val (glow, kinetic) = moodWord(snapshot.lensX, snapshot.lensY)
+    val empty = snapshot.now.isEmpty() && snapshot.deep.isEmpty() &&
+        snapshot.fill.isEmpty() && snapshot.shelf.isEmpty()
+    Box(modifier.fillMaxSize()) {
+        Sky()
+        Column(Modifier.fillMaxSize()) {
             Text(
-                text = stringResource(R.string.context_lyrics),
-                color = MeridianTheme.colors.text,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 18.dp),
+                "Context",
+                color = Cream,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(168.dp)
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(22.dp)),
+            ) {
+                MoodMap(
+                    snapshot = snapshot,
+                    onLens = onLens,
+                    onPlay = onPlay,
+                    onPin = onPin,
+                    showSky = true,
+                    compact = true,
+                )
+            }
+            Row(
+                Modifier.padding(start = 20.dp, top = 10.dp, end = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MoodChip(glow)
+                MoodChip(kinetic)
+                if (snapshot.bandLabel.isNotBlank()) MoodChip(snapshot.bandLabel)
+            }
             Text(
-                text = track.lyrics,
-                color = MeridianTheme.colors.muted,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 8.dp),
+                "Listen matrix — the same NOW / DEEP / FILL / SHELF bands as the desktop app.",
+                color = Mute,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
             )
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                if (empty) {
+                    Text(
+                        "No tracks in this neighborhood yet. Scan a folder, then aim the lens.",
+                        color = Mute,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                } else {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        MatrixCell("NOW", "Closest to the lens", Now, snapshot.now, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
+                        MatrixCell("DEEP", "Worth sitting with", Deep, snapshot.deep, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
+                    }
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(220.dp)
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        MatrixCell("FILL", "Keeps the room going", Fill, snapshot.fill, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
+                        MatrixCell("SHELF", "Parked until later", Shelf, snapshot.shelf, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
+                    }
+                }
+            }
+            Button(
+                onClick = onPlayContext,
+                enabled = snapshot.queue.isNotEmpty() || snapshot.now.isNotEmpty() || snapshot.stars.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(52.dp),
+                shape = RoundedCornerShape(28.dp),
+            ) {
+                Text("Play Context", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            }
         }
-        Spacer(Modifier.height(22.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            AccentButton(
-                text = stringResource(R.string.context_open_file),
-                onClick = {
-                    val view =
-                        Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(track.uri, "audio/*")
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                    context.startActivity(Intent.createChooser(view, context.getString(R.string.context_open_file)))
-                },
-                modifier = Modifier.weight(1f),
-            )
-            AccentButton(
-                text = stringResource(R.string.context_share),
-                onClick = {
-                    val share =
-                        Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "${track.artist} — ${track.title}\n${track.uri}")
-                        }
-                    context.startActivity(Intent.createChooser(share, context.getString(R.string.context_share)))
-                },
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            AccentButton(
-                text = stringResource(R.string.context_open_mood_map),
-                onClick = onOpenMoodMap,
-                modifier = Modifier.weight(1f),
-            )
-            AccentButton(
-                text = stringResource(R.string.context_open_why),
-                onClick = onOpenWhy,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun ContextRow(
-    label: String,
-    value: String,
+private fun MatrixCell(
+    title: String,
+    subtitle: String,
+    accent: Color,
+    tracks: List<TrackRow>,
+    currentId: Int?,
+    onPlay: (Int) -> Unit,
+    onWhy: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 5.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
+        modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Card)
+            .padding(10.dp),
     ) {
-        Text(text = label, color = MeridianTheme.colors.muted, fontSize = 13.sp)
-        Text(text = value, color = MeridianTheme.colors.text, fontSize = 13.sp)
+        Text(title, color = accent, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        Text(subtitle, color = Mute, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (tracks.isEmpty()) {
+            Text("—", color = Mute, modifier = Modifier.padding(top = 12.dp), fontSize = 12.sp)
+        } else {
+            tracks.take(5).forEach { row ->
+                Text(
+                    row.title,
+                    color = if (row.id == currentId) Orange else Ink,
+                    fontFamily = UbuntuCondensed,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onWhy(row.id)
+                        }
+                        .padding(top = 6.dp),
+                )
+                Text(
+                    row.artist,
+                    color = Mute,
+                    fontFamily = UbuntuCondensed,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onPlay(row.id) },
+                )
+            }
+        }
     }
+}
+
+@Composable
+internal fun MoodChip(label: String) {
+    Text(
+        label,
+        color = Ink,
+        fontSize = 12.sp,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Card)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    )
 }
