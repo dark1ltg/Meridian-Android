@@ -1,0 +1,11 @@
+#!/bin/sh
+# Block GitHub remotes. This tree is local-only unless you say otherwise.
+url="$2"
+case "$url" in
+  *github.com*|*github.com:* )
+    echo "Refusing push to GitHub ($url)." >&2
+    echo "This project stays local until you explicitly ask to publish." >&2
+    exit 1
+    ;;
+esac
+exit 0
