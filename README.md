@@ -8,9 +8,20 @@ Meridian is a local, offline music player for **Android 8.0+**. Every track beco
 
 This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playback, bundled FFmpeg JNI, native aubio, and the shared Python engine (Chaquopy) used by the [Linux desktop app](https://github.com/dark1ltg/Meridian).
 
+## Download
+
+Get **Meridian 1.3.6** for Android (arm64 APK) from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page.
+
+```bash
+# after downloading Meridian-1.3.6-arm64.apk
+adb install -r Meridian-1.3.6-arm64.apk
+```
+
+On the phone: open the APK, allow install from that source if asked. Needs **Android 8.0+** and an **arm64** device (Titan 2, Pixel, and most current phones). Linux AppImages stay on [dark1ltg/Meridian releases](https://github.com/dark1ltg/Meridian/releases).
+
 ## Features
 
-- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dive-zoom; star titles appear when zoomed
+- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dive-zoom; star titles appear when zoomed. Lens motion is a local overlay (Titan 2 / 1440² class) so aiming stays at display refresh; queues follow on lift
 - **Listen matrix** — Context tab shows NOW / DEEP / FILL / SHELF
 - **Context queue** — replenishes from the lens, time of day, and listening mode (Focus, Wander, Charge, Dim)
 - **Library folders** — add a real directory via the system picker; Scan / Listen show progress and can be cancelled
@@ -18,7 +29,7 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 - **Background playback** — lockscreen and notification controls; audio keeps going when you switch apps
 - **Crossfade** — ~3s overlap between tracks (always-on dual-deck)
 - **FFmpeg** — bundled Media3 JNI decoder for Listen and playback when the platform codec cannot open a file
-- **Local analysis** — tags plus a short mid-track waveform; bundled **aubio** for tempo/onset cues
+- **Local analysis** — tags plus intro / mid / late 12s listens (same 1.3.6 honesty as desktop); bundled **aubio** for tempo/onset cues
 - **Pins & search** — drag a star to lock its mood; search by title, artist, album, or path
 
 Minimum: **Android 8.0 (API 26)**. Default library folder: the device **Music** directory. Grant `READ_EXTERNAL_STORAGE` (Android 8–12) or `READ_MEDIA_AUDIO` (13+).
