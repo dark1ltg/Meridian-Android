@@ -20,8 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Menu
@@ -144,8 +142,6 @@ fun MainScreen(
                 onPlay = onPlay,
                 onPin = onPin,
                 onPlayContext = onPlayContext,
-                onOpenPlayer = { overlay = Overlay.NowPlaying },
-                onTogglePlay = onTogglePlay,
                 onMenu = { tab = AppTab.More },
                 onSearch = {
                     overlay = Overlay.Search
@@ -299,8 +295,6 @@ private fun MapTab(
     onPlay: (Int) -> Unit,
     onPin: (Int, Float, Float) -> Unit,
     onPlayContext: () -> Unit,
-    onOpenPlayer: () -> Unit,
-    onTogglePlay: () -> Unit,
     onMenu: () -> Unit,
     onSearch: () -> Unit,
     onTab: (AppTab) -> Unit,
@@ -408,12 +402,6 @@ private fun MapTab(
                         fontSize = 13.sp,
                         modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
                     )
-                    MiniPlayer(
-                        track = snap.current,
-                        playing = ui.playing,
-                        onOpen = onOpenPlayer,
-                        onToggle = onTogglePlay,
-                    )
                     Button(
                         onClick = onPlayContext,
                         enabled = snap.queue.isNotEmpty() || snap.stars.isNotEmpty(),
@@ -429,56 +417,6 @@ private fun MapTab(
                     BottomNav(AppTab.Map, onTab)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun MiniPlayer(
-    track: TrackRow?,
-    playing: Boolean,
-    onOpen: () -> Unit,
-    onToggle: () -> Unit,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Card)
-            .clickable(onClick = onOpen)
-            .padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TrackArt(
-            track?.path.orEmpty(),
-            track?.title ?: "Meridian",
-            Modifier.size(44.dp),
-            corner = 10.dp,
-            useAlbumArt = false,
-        )
-        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-            Text(
-                track?.title ?: "Nothing playing",
-                color = Ink,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Medium,
-            )
-            Text(
-                track?.artist ?: "Aim the lens, then play",
-                color = Mute,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        IconButton(onClick = onToggle) {
-            Icon(
-                if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = "Play",
-                tint = Cream,
-            )
         }
     }
 }
