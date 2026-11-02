@@ -25,11 +25,16 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.dark1ltg.meridian.data.FolderPaths
-import io.github.dark1ltg.meridian.data.JobProgress
 import io.github.dark1ltg.meridian.ui.theme.Card
 import io.github.dark1ltg.meridian.ui.theme.Cream
 import io.github.dark1ltg.meridian.ui.theme.Ink
@@ -56,13 +60,12 @@ fun SettingsScreen(
     onRescan: () -> Unit,
     onAddFolder: () -> Unit,
     onRemoveFolder: (String) -> Unit,
-    onCancel: () -> Unit,
     busy: Boolean,
-    job: JobProgress,
     onIndexAll: () -> Unit = {},
     onOpen: (SettingsPage) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var advanced by remember { mutableStateOf(false) }
     Column(
         modifier
             .fillMaxSize()
@@ -76,52 +79,46 @@ fun SettingsScreen(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
         )
-        SettingsRow(Icons.Outlined.Folder, "Library", "Locations & scanning")
+        SettingsRow(Icons.Outlined.Folder, "Library", "Locations & listening")
         Column(
             Modifier
                 .fillMaxWidth()
                 .padding(start = 56.dp, bottom = 12.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onScan, enabled = !busy) { Text("Scan", color = Orange) }
-                TextButton(onClick = onAnalyze, enabled = !busy) { Text("Listen", color = Orange) }
-                TextButton(onClick = onRescan, enabled = !busy) { Text("Rescan", color = Orange) }
+            Button(
+                onClick = onAnalyze,
+                enabled = !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(22.dp),
+            ) {
+                Text("Listen", fontWeight = FontWeight.SemiBold)
             }
-            if (busy || job.running) {
-                val label = when (job.kind) {
-                    "listen" -> "Listening"
-                    "scan" -> "Scanning"
-                    "rescan" -> "Rescanning"
-                    else -> "Working"
+            Text(
+                if (advanced) "Hide advanced" else "Advanced",
+                color = Orange,
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .clickable { advanced = !advanced },
+            )
+            if (advanced) {
+                Row(
+                    Modifier.padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(onClick = onScan, enabled = !busy) { Text("Scan", color = Orange) }
+                    TextButton(onClick = onRescan, enabled = !busy) { Text("Rescan", color = Orange) }
                 }
-                Text(
-                    if (job.total > 0) "$label ${job.current}/${job.total} · ${job.message}"
-                    else "$label · ${job.message.ifBlank { "…" }}",
-                    color = Mute,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(bottom = 6.dp),
-                )
-                if (job.total > 0) {
-                    LinearProgressIndicator(
-                        progress = { job.fraction },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Orange,
-                        trackColor = Color(0x22FFFFFF),
-                    )
-                } else {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Orange,
-                        trackColor = Color(0x22FFFFFF),
-                    )
-                }
-                TextButton(onClick = onCancel) { Text("Cancel", color = Orange) }
             }
             if (folders.isEmpty()) {
                 Text(
-                    "No folders yet. Add Music, Downloads, or pick a directory this phone can walk.",
+                    "No folders yet.",
                     color = Mute,
                     fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             } else {
                 folders.forEach { path ->
@@ -178,12 +175,12 @@ fun SettingsScreen(
             fontSize = 12.sp,
             modifier = Modifier.padding(start = 56.dp, bottom = 14.dp),
         )
-        SettingsRow(Icons.Outlined.Tune, "Listening mode", "Focus, Wander, Charge, Dim — chips above")
+        SettingsRow(Icons.Outlined.Tune, "Listening mode", "Focus, Wander, Charge, Dim")
         SettingsRow(Icons.Outlined.Shield, "Privacy", "Nothing leaves this phone") { onOpen(SettingsPage.Privacy) }
         SettingsRow(Icons.Outlined.Info, "About", "Meridian 1.3.6") { onOpen(SettingsPage.About) }
         Spacer(Modifier.height(12.dp))
         Text(
-            "Offline. Local. Yours. No accounts, no cloud, no store sync.",
+            "Offline. Local. Yours.",
             color = Mute,
             fontSize = 12.sp,
         )

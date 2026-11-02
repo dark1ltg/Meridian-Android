@@ -3,7 +3,6 @@ package io.github.dark1ltg.meridian.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -11,16 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -47,99 +43,82 @@ fun ContextScreen(
     onPlay: (Int) -> Unit,
     onPlayContext: () -> Unit,
     onOpenWhy: (Int) -> Unit,
-    onLens: (Float, Float, Float) -> Unit,
-    onPin: (Int, Float, Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val (glow, kinetic) = moodWord(snapshot.lensX, snapshot.lensY)
     val empty = snapshot.now.isEmpty() && snapshot.deep.isEmpty() &&
         snapshot.fill.isEmpty() && snapshot.shelf.isEmpty()
-    Box(modifier.fillMaxSize()) {
-        Sky()
-        Column(Modifier.fillMaxSize()) {
+    // Parent already paints Sky for non-Map tabs — avoid a second layer.
+    Column(modifier.fillMaxSize()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Text(
                 "Context",
                 color = Cream,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(168.dp)
-                    .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(22.dp)),
-            ) {
-                MoodMap(
-                    snapshot = snapshot,
-                    onLens = onLens,
-                    onPlay = onPlay,
-                    onPin = onPin,
-                    showSky = true,
-                    compact = true,
+            if (snapshot.mode.isNotBlank()) {
+                MoodChip(snapshot.mode.replaceFirstChar { it.titlecase() })
+            }
+        }
+        Row(
+            Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            MoodChip(glow)
+            MoodChip(kinetic)
+            if (snapshot.bandLabel.isNotBlank()) MoodChip(snapshot.bandLabel)
+        }
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            if (empty) {
+                Text(
+                    "No tracks in this neighborhood.",
+                    color = Mute,
+                    modifier = Modifier.padding(12.dp),
                 )
-            }
-            Row(
-                Modifier.padding(start = 20.dp, top = 10.dp, end = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                MoodChip(glow)
-                MoodChip(kinetic)
-                if (snapshot.bandLabel.isNotBlank()) MoodChip(snapshot.bandLabel)
-            }
-            Text(
-                "Listen matrix — the same NOW / DEEP / FILL / SHELF bands as the desktop app.",
-                color = Mute,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
-            )
-            Column(
-                Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                if (empty) {
-                    Text(
-                        "No tracks in this neighborhood yet. Scan a folder, then aim the lens.",
-                        color = Mute,
-                        modifier = Modifier.padding(12.dp),
-                    )
-                } else {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(220.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        MatrixCell("NOW", "Closest to the lens", Now, snapshot.now, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
-                        MatrixCell("DEEP", "Worth sitting with", Deep, snapshot.deep, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
-                    }
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(220.dp)
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        MatrixCell("FILL", "Keeps the room going", Fill, snapshot.fill, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
-                        MatrixCell("SHELF", "Parked until later", Shelf, snapshot.shelf, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
-                    }
+            } else {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MatrixCell("NOW", "Closest", Now, snapshot.now, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
+                    MatrixCell("DEEP", "Sit with", Deep, snapshot.deep, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MatrixCell("FILL", "Keeps going", Fill, snapshot.fill, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
+                    MatrixCell("SHELF", "Parked", Shelf, snapshot.shelf, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
                 }
             }
-            Button(
-                onClick = onPlayContext,
-                enabled = snapshot.queue.isNotEmpty() || snapshot.now.isNotEmpty() || snapshot.stars.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .height(52.dp),
-                shape = RoundedCornerShape(28.dp),
-            ) {
-                Text("Play Context", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            }
+        }
+        Button(
+            onClick = onPlayContext,
+            enabled = snapshot.queue.isNotEmpty() || snapshot.now.isNotEmpty() || snapshot.stars.isNotEmpty(),
+            colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .height(48.dp),
+            shape = RoundedCornerShape(24.dp),
+        ) {
+            Text("Play Context", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         }
     }
 }
@@ -159,7 +138,7 @@ private fun MatrixCell(
         modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(16.dp))
-            .background(Card)
+            .background(Card.copy(alpha = 0.72f))
             .padding(10.dp),
     ) {
         Text(title, color = accent, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
@@ -167,7 +146,7 @@ private fun MatrixCell(
         if (tracks.isEmpty()) {
             Text("—", color = Mute, modifier = Modifier.padding(top = 12.dp), fontSize = 12.sp)
         } else {
-            tracks.take(5).forEach { row ->
+            tracks.take(6).forEach { row ->
                 Text(
                     row.title,
                     color = if (row.id == currentId) Orange else Ink,
@@ -177,9 +156,7 @@ private fun MatrixCell(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            onWhy(row.id)
-                        }
+                        .clickable { onWhy(row.id) }
                         .padding(top = 6.dp),
                 )
                 Text(
@@ -206,7 +183,7 @@ internal fun MoodChip(label: String) {
         fontSize = 12.sp,
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(Card)
+            .background(Card.copy(alpha = 0.72f))
             .padding(horizontal = 10.dp, vertical = 4.dp),
     )
 }

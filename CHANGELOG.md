@@ -10,6 +10,7 @@ All notable Meridian releases are listed here.
 First published Android package on this repo’s Releases page: **`Meridian-1.3.6-arm64.apk`** (~35.3 MB; SHA-256 `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290`) for Android 8.0+ / arm64. Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
 - Mood-map lens aims at pointer rate on Titan 2 class phones (1440×1440 @ 120 Hz): starfield stays put while the ring moves, HUD mood words update locally, and `set_lens` / queue rebuild wait for finger-up or 150 ms idle
+- Map HUD fades while aiming; empty library exposes Index / Folder / Scan / Listen on the map; mode chip in the top bar; pin/love flash confirmation; Listen is the primary library verb (Scan/Rescan under Advanced); Context is matrix-only on the night sky (no inset mini-map); job progress shows once per surface
 - Lens drag no longer walks every star for hover, reallocates the shade path, or sends Python a classify on each move
 - Listen analysis matches desktop **1.3.6**: three-section intro/mid/late windows, loudness-normalized Glow/Kinetic, placement honesty (dialogue drop, pitch Glow, slope, sub-bass, keyword undo), shape/timbre/steer leftovers, and kept-prior conclude so a later PCM miss does not re-queue the library
 - Shared engine no longer needs Qt for paths, scan, or the listening session (`meridian.paths`, `meridian.scan_core`, `meridian.android_session`)

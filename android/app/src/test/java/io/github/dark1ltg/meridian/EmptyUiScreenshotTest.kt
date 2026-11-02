@@ -157,8 +157,6 @@ class EmptyUiScreenshotTest {
                     onPlay = {},
                     onPlayContext = {},
                     onOpenWhy = {},
-                    onLens = { _, _, _ -> },
-                    onPin = { _, _, _ -> },
                 )
             }
         }

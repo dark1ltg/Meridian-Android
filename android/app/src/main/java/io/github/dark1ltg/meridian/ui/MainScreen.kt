@@ -1,5 +1,7 @@
 package io.github.dark1ltg.meridian.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -36,19 +37,21 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import io.github.dark1ltg.meridian.ui.theme.UbuntuSans
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +61,8 @@ import io.github.dark1ltg.meridian.ui.theme.Cream
 import io.github.dark1ltg.meridian.ui.theme.Ink
 import io.github.dark1ltg.meridian.ui.theme.Mute
 import io.github.dark1ltg.meridian.ui.theme.Orange
+import io.github.dark1ltg.meridian.ui.theme.UbuntuSans
+import kotlinx.coroutines.delay
 
 enum class AppTab { Map, Queue, Context, More }
 
@@ -124,6 +129,22 @@ fun MainScreen(
 ) {
     var tab by remember { mutableStateOf(initialTab) }
     var overlay by remember { mutableStateOf(initialOverlay) }
+    var toast by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            delay(1400)
+            toast = null
+        }
+    }
+    val flash: (String) -> Unit = { toast = it }
+    val pinWithFlash: (Int, Float, Float) -> Unit = { id, v, e ->
+        onPin(id, v, e)
+        flash("Pinned")
+    }
+    val loveWithFlash: (Int) -> Unit = { id ->
+        onLove(id)
+        flash("Loved")
+    }
     val snap = ui.snapshot
     val whyTrack = (overlay as? Overlay.Why)?.id?.let { id ->
         snap.queue.find { it.id == id }
@@ -134,6 +155,7 @@ fun MainScreen(
             ?: snap.stars.find { it.id == id }
             ?: snap.current?.takeIf { it.id == id }
     }
+    val showJob = ui.busy || ui.job.running
 
     Box(Modifier.fillMaxSize()) {
         if (tab != AppTab.Map) Sky()
@@ -142,7 +164,7 @@ fun MainScreen(
                 ui = ui,
                 onLens = onLens,
                 onPlay = onPlay,
-                onPin = onPin,
+                onPin = pinWithFlash,
                 onPlayContext = onPlayContext,
                 onOpenPlayer = { overlay = Overlay.NowPlaying },
                 onTogglePlay = onTogglePlay,
@@ -153,6 +175,10 @@ fun MainScreen(
                 },
                 onTab = { tab = it },
                 onCancelJob = onCancelJob,
+                onScan = onScan,
+                onAnalyze = onAnalyze,
+                onAddFolder = onAddFolder,
+                onIndexAll = onIndexAll,
             )
         } else {
             Column(
@@ -161,12 +187,8 @@ fun MainScreen(
                     .statusBarsPadding()
                     .navigationBarsPadding(),
             ) {
-                if (ui.busy) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Orange,
-                        trackColor = Color(0x22FFFFFF),
-                    )
+                if (showJob) {
+                    JobStrip(ui = ui, onCancel = onCancelJob)
                 }
                 Box(Modifier.weight(1f)) {
                     when (tab) {
@@ -176,7 +198,7 @@ fun MainScreen(
                             currentId = snap.current?.id,
                             queueIndex = snap.queueIndex,
                             onPlay = onPlay,
-                            onLove = onLove,
+                            onLove = loveWithFlash,
                             onOpenWhy = { overlay = Overlay.Why(it) },
                         )
                         AppTab.Context -> ContextScreen(
@@ -184,8 +206,6 @@ fun MainScreen(
                             onPlay = onPlay,
                             onPlayContext = onPlayContext,
                             onOpenWhy = { overlay = Overlay.Why(it) },
-                            onLens = onLens,
-                            onPin = onPin,
                         )
                         AppTab.More -> SettingsScreen(
                             folders = snap.folders,
@@ -196,9 +216,7 @@ fun MainScreen(
                             onRescan = onRescan,
                             onAddFolder = onAddFolder,
                             onRemoveFolder = onRemoveFolder,
-                            onCancel = onCancelJob,
                             busy = ui.busy,
-                            job = ui.job,
                             onIndexAll = onIndexAll,
                             onOpen = { overlay = Overlay.Settings(it) },
                         )
@@ -214,7 +232,7 @@ fun MainScreen(
                 currentId = snap.current?.id,
                 onQuery = onSearch,
                 onPlay = onPlay,
-                onLove = onLove,
+                onLove = loveWithFlash,
                 onOpenWhy = { overlay = Overlay.Why(it) },
                 onClose = {
                     overlay = Overlay.None
@@ -234,7 +252,7 @@ fun MainScreen(
                 onSkip = onSkip,
                 onPrevious = onPrevious,
                 onSeek = onSeek,
-                onLove = { snap.current?.id?.let(onLove) },
+                onLove = { snap.current?.id?.let(loveWithFlash) },
                 onVolume = onVolume,
             )
         }
@@ -263,11 +281,69 @@ fun MainScreen(
                 },
             )
         }
+        toast?.let { label ->
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 96.dp),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                Text(
+                    label,
+                    color = Cream,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xEE121A32))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun MapTopBar(onMenu: () -> Unit, onSearch: () -> Unit) {
+internal fun JobStrip(ui: UiState, onCancel: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        if (ui.job.total > 0) {
+            LinearProgressIndicator(
+                progress = { ui.job.fraction },
+                modifier = Modifier.fillMaxWidth(),
+                color = Orange,
+                trackColor = Color(0x22FFFFFF),
+            )
+        } else {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = Orange,
+                trackColor = Color(0x22FFFFFF),
+            )
+        }
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                ui.job.message.ifBlank { ui.message },
+                color = Mute,
+                fontSize = 12.sp,
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "Cancel",
+                color = Orange,
+                fontSize = 12.sp,
+                modifier = Modifier.clickable(onClick = onCancel),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MapTopBar(onMenu: () -> Unit, onSearch: () -> Unit, mode: String) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -286,6 +362,18 @@ private fun MapTopBar(onMenu: () -> Unit, onSearch: () -> Unit) {
             letterSpacing = 4.sp,
             modifier = Modifier.weight(1f),
         )
+        if (mode.isNotBlank()) {
+            Text(
+                mode.replaceFirstChar { it.titlecase() },
+                color = Mute,
+                fontSize = 11.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0x66121A32))
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+        }
         IconButton(onClick = onSearch) {
             Icon(Icons.Outlined.Search, contentDescription = "Search", tint = Ink)
         }
@@ -305,6 +393,10 @@ private fun MapTab(
     onSearch: () -> Unit,
     onTab: (AppTab) -> Unit,
     onCancelJob: () -> Unit,
+    onScan: () -> Unit,
+    onAnalyze: () -> Unit,
+    onAddFolder: () -> Unit,
+    onIndexAll: () -> Unit,
 ) {
     val snap = ui.snapshot
     val lensAim = remember { LensAim(snap.lensX, snap.lensY, snap.lensRadius) }
@@ -316,6 +408,12 @@ private fun MapTab(
     val onHover = remember {
         { text: String -> skyHintState.value = text }
     }
+    val hudAlpha by animateFloatAsState(
+        targetValue = if (lensAim.dragging) 0.12f else 1f,
+        animationSpec = tween(160),
+        label = "mapHud",
+    )
+    val emptyLibrary = snap.trackCount == 0
     Box(Modifier.fillMaxSize()) {
         MoodMap(
             snapshot = snap,
@@ -331,43 +429,9 @@ private fun MapTab(
                 .statusBarsPadding()
                 .navigationBarsPadding(),
         ) {
-            MapTopBar(onMenu = onMenu, onSearch = onSearch)
+            MapTopBar(onMenu = onMenu, onSearch = onSearch, mode = snap.mode)
             if (ui.busy || ui.job.running) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                    if (ui.job.total > 0) {
-                        LinearProgressIndicator(
-                            progress = { ui.job.fraction },
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Orange,
-                            trackColor = Color(0x22FFFFFF),
-                        )
-                    } else {
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Orange,
-                            trackColor = Color(0x22FFFFFF),
-                        )
-                    }
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            ui.job.message.ifBlank { ui.message },
-                            color = Mute,
-                            fontSize = 12.sp,
-                            modifier = Modifier.weight(1f).padding(end = 8.dp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            "Cancel",
-                            color = Orange,
-                            fontSize = 12.sp,
-                            modifier = Modifier.clickable(onClick = onCancelJob),
-                        )
-                    }
-                }
+                JobStrip(ui = ui, onCancel = onCancelJob)
             }
             Spacer(Modifier.weight(1f))
             Box(
@@ -378,36 +442,51 @@ private fun MapTab(
                             listOf(Color.Transparent, Color(0xE6080614)),
                         ),
                     )
-                    .padding(top = 36.dp),
+                    .padding(top = 24.dp),
             ) {
                 Column {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("Shadow   ·   Glow", color = Mute, fontSize = 12.sp)
-                        Text("Still   ·   Kinetic", color = Mute, fontSize = 12.sp)
+                    Column(Modifier.alpha(hudAlpha)) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text("Shadow   ·   Glow", color = Mute, fontSize = 11.sp)
+                            Text("Still   ·   Kinetic", color = Mute, fontSize = 11.sp)
+                        }
+                        Text(
+                            when {
+                                skyHint.isNotBlank() -> skyHint
+                                emptyLibrary -> ui.message
+                                else -> "$nearby nearby"
+                            },
+                            color = Ink,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                        Text(
+                            listOfNotNull(snap.bandLabel.ifBlank { null }, glow, kinetic)
+                                .joinToString("  ·  "),
+                            color = Mute,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
+                        )
                     }
-                    Text(
-                        when {
-                            skyHint.isNotBlank() -> skyHint
-                            snap.trackCount == 0 -> ui.message
-                            else -> "$nearby tracks nearby"
-                        },
-                        color = Ink,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
-                    )
-                    Text(
-                        listOfNotNull(snap.bandLabel.ifBlank { null }, glow, kinetic)
-                            .joinToString("  ·  "),
-                        color = Mute,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
-                    )
+                    if (emptyLibrary) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            TextButton(onClick = onIndexAll) { Text("Index", color = Orange) }
+                            TextButton(onClick = onAddFolder) { Text("Folder", color = Orange) }
+                            TextButton(onClick = onScan) { Text("Scan", color = Orange) }
+                            TextButton(onClick = onAnalyze) { Text("Listen", color = Orange) }
+                        }
+                    }
                     MiniPlayer(
                         track = snap.current,
                         playing = ui.playing,
@@ -420,9 +499,9 @@ private fun MapTab(
                         colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(24.dp),
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(22.dp),
                     ) {
                         Text("Play Context", fontWeight = FontWeight.SemiBold)
                     }
@@ -476,7 +555,7 @@ private fun MiniPlayer(
         IconButton(onClick = onToggle) {
             Icon(
                 if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = "Play",
+                contentDescription = if (playing) "Pause" else "Play",
                 tint = Cream,
             )
         }
@@ -488,10 +567,10 @@ private fun BottomNav(tab: AppTab, onTab: (AppTab) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(Color(0xCC0C1220))
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -526,8 +605,6 @@ private fun SearchOverlay(
     onOpenWhy: (Int) -> Unit,
     onClose: () -> Unit,
 ) {
-    // Local draft owns the caret. Engine results update [rows] async; never feed
-    // snapshot.searchQuery back into the field while typing.
     var draft by remember { mutableStateOf(initialQuery) }
     Column(
         Modifier
@@ -561,25 +638,18 @@ private fun SearchOverlay(
             )
         }
         LazyColumn(Modifier.padding(top = 12.dp)) {
-            if (draft.isBlank()) {
-                item {
-                    Text(
-                        "Type a title, artist, or album.",
-                        color = Mute,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-            } else if (rows.isEmpty()) {
+            if (draft.isNotBlank() && rows.isEmpty()) {
                 item { Text("No matches.", color = Mute, modifier = Modifier.padding(top = 8.dp)) }
             }
             items(rows, key = { it.id }) { row ->
                 QueueRow(
-                    index = rows.indexOf(row) + 1,
+                    index = 0,
                     row = row,
                     active = row.id == currentId,
                     onPlay = { onPlay(row.id) },
                     onLove = { onLove(row.id) },
                     onOpenWhy = { onOpenWhy(row.id) },
+                    showIndex = false,
                 )
             }
         }

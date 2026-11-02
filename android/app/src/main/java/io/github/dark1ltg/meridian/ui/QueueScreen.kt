@@ -56,7 +56,7 @@ fun QueueScreen(
         )
         if (tracks.isEmpty()) {
             Text(
-                "Move the lens on the map — the context queue fills from that neighborhood.",
+                "Queue is empty.",
                 color = Mute,
                 modifier = Modifier.padding(top = 24.dp),
             )
@@ -70,6 +70,7 @@ fun QueueScreen(
                         onPlay = { onPlay(row.id) },
                         onLove = { onLove(row.id) },
                         onOpenWhy = { onOpenWhy(row.id) },
+                        showIndex = true,
                     )
                 }
             }
@@ -85,6 +86,7 @@ internal fun QueueRow(
     onPlay: () -> Unit,
     onLove: () -> Unit,
     onOpenWhy: () -> Unit,
+    showIndex: Boolean = true,
 ) {
     Row(
         Modifier
@@ -95,12 +97,14 @@ internal fun QueueRow(
             .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            "$index",
-            color = if (active) Orange else Mute,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(end = 10.dp),
-        )
+        if (showIndex) {
+            Text(
+                "$index",
+                color = if (active) Orange else Mute,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(end = 10.dp),
+            )
+        }
         TrackArt(row.path, row.title, Modifier.size(48.dp), corner = 10.dp, useAlbumArt = false)
         Column(
             Modifier
