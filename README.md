@@ -12,9 +12,9 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 
 Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page:
 
-- **File:** `Meridian-1.3.6-arm64.apk` (arm64-v8a; includes aubio + Media3 FFmpeg JNI)
-- **Published:** 2026-11-02 (rebuilt when Release CI republishes the tag)
-- **Checksum:** download [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) next to the APK
+- **File:** `Meridian-1.3.6-arm64.apk` (~35.3 MB, arm64-v8a; includes aubio + Media3 FFmpeg JNI)
+- **SHA-256:** `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290`
+- **Published:** 2026-11-02 (FFmpeg JNI rebuild)
 
 ```bash
 # verify, then install

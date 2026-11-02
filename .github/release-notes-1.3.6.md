@@ -1,6 +1,7 @@
 Meridian Android **1.3.6** — installable APK on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases) page (published **2026-11-02**; rebuild includes Media3 FFmpeg JNI).
 
-**Download:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk)  
+**Download:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~35.3 MB)  
+**SHA-256:** `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290`  
 Checksum file: [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)
 
 ```bash

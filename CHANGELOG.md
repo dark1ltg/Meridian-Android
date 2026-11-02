@@ -7,7 +7,7 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK, 2026-11-02
 
-First published Android package on this repo’s Releases page: **`Meridian-1.3.6-arm64.apk`** for Android 8.0+ / arm64 (checksum on the [release assets](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)). Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+First published Android package on this repo’s Releases page: **`Meridian-1.3.6-arm64.apk`** (~35.3 MB; SHA-256 `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290`) for Android 8.0+ / arm64. Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
 - Mood-map lens aims at pointer rate on Titan 2 class phones (1440×1440 @ 120 Hz): starfield stays put while the ring moves, HUD mood words update locally, and `set_lens` / queue rebuild wait for finger-up or 150 ms idle
 - Lens drag no longer walks every star for hover, reallocates the shade path, or sends Python a classify on each move

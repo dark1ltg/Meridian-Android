@@ -104,7 +104,8 @@ jobs:
           cp "$src" dist/Meridian-1.3.6-arm64.apk
           unzip -l dist/Meridian-1.3.6-arm64.apk | grep -F 'lib/arm64-v8a/libffmpegJNI.so'
           unzip -l dist/Meridian-1.3.6-arm64.apk | grep -F 'lib/arm64-v8a/libmeridian_aubio.so'
-          sha256sum dist/Meridian-1.3.6-arm64.apk | tee dist/Meridian-1.3.6-arm64.apk.sha256
+          # Basename in the checksum file so `sha256sum -c` works next to the downloaded APK.
+          (cd dist && sha256sum Meridian-1.3.6-arm64.apk | tee Meridian-1.3.6-arm64.apk.sha256)
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

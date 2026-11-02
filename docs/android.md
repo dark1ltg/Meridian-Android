@@ -33,9 +33,10 @@ Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Androi
 
 | | |
 |---|---|
+| **Size** | ~35.3 MB |
+| **SHA-256** | `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290` |
 | **ABI** | arm64-v8a |
-| **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` (Release workflow builds FFmpeg JNI) |
-| **Checksum** | See [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) on the release (updates when the APK is rebuilt) |
+| **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
