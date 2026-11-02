@@ -10,11 +10,12 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 
 ## Download
 
-Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page:
+Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 137**):
 
-- **File:** `Meridian-1.3.6-arm64.apk` (~35.3 MB, arm64-v8a; includes aubio + Media3 FFmpeg JNI)
-- **SHA-256:** `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290`
-- **Published:** 2026-11-02 (FFmpeg JNI rebuild)
+- **APK:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (arm64-v8a; aubio + Media3 FFmpeg JNI)
+- **APK checksum:** [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)
+- **Source:** [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (full tree at the release commit)
+- **Source checksum:** [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)
 
 ```bash
 # verify, then install
@@ -26,16 +27,17 @@ On the phone: open the APK, allow install from that source if asked. Needs **And
 
 ## Features
 
-- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dive-zoom; star titles appear when zoomed. Lens motion is a local overlay (Titan 2 / 1440² class) so aiming stays at display refresh; queues follow on lift
-- **Listen matrix** — Context tab shows NOW / DEEP / FILL / SHELF
+- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dive-zoom; star titles appear when zoomed. Lens motion is a local overlay (Titan 2 / 1440² class) so aiming stays at display refresh; HUD fades while aiming; queues follow on lift or idle
+- **Empty library** — Index / Folder / Scan / Listen actions on the map when nothing is indexed yet
+- **Listen matrix** — Context tab is matrix-only on the night sky (NOW / DEEP / FILL / SHELF)
 - **Context queue** — replenishes from the lens, time of day, and listening mode (Focus, Wander, Charge, Dim)
-- **Library folders** — add a real directory via the system picker; Scan / Listen show progress and can be cancelled
+- **Library** — add a real directory via the system picker; Listen is the primary library verb (Scan / Rescan under Advanced); progress shows once per surface and can be cancelled
 - **Honest why** — queue reasons use fit, importance, love, pins, play/skip counts, clock band, and mode
 - **Background playback** — lockscreen and notification controls; audio keeps going when you switch apps
 - **Crossfade** — ~3s overlap between tracks (always-on dual-deck)
 - **Decode** — Listen prefers MediaCodec, then Media3 FFmpeg JNI (`libffmpegJNI.so` in the release APK) when the platform codec cannot open a file
 - **Local analysis** — tags plus intro / mid / late 12s listens (same 1.3.6 honesty as desktop); bundled **aubio** (`libmeridian_aubio.so`) for tempo/onset cues
-- **Pins & search** — drag a star to lock its mood; search by title, artist, album, or path
+- **Pins, love & search** — drag a star to lock its mood; pin/love flash confirmation; debounced search by title, artist, album, or path
 
 Minimum: **Android 8.0 (API 26)**. Default library folder: the device **Music** directory. Grant `READ_EXTERNAL_STORAGE` (Android 8–12) or `READ_MEDIA_AUDIO` (13+).
 

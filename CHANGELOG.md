@@ -5,12 +5,17 @@ All notable Meridian releases are listed here.
 - **Android APK:** [dark1ltg/Meridian-Android/releases](https://github.com/dark1ltg/Meridian-Android/releases)
 - **Linux AppImage:** [dark1ltg/Meridian/releases](https://github.com/dark1ltg/Meridian/releases)
 
-## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK, 2026-11-02
+## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-02
 
-First published Android package on this repo’s Releases page: **`Meridian-1.3.6-arm64.apk`** (~35.3 MB; SHA-256 `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290`) for Android 8.0+ / arm64. Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+Published on this repo’s Releases page (**versionCode 137** / versionName 1.3.6):
+
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI); checksum in `Meridian-1.3.6-arm64.apk.sha256`
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit; checksum in `Meridian-1.3.6-src.tar.gz.sha256`
+
+Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
 - Mood-map lens aims at pointer rate on Titan 2 class phones (1440×1440 @ 120 Hz): starfield stays put while the ring moves, HUD mood words update locally, and `set_lens` / queue rebuild wait for finger-up or 150 ms idle
-- Map HUD fades while aiming; empty library exposes Index / Folder / Scan / Listen on the map; mode chip in the top bar; pin/love flash confirmation; Listen is the primary library verb (Scan/Rescan under Advanced); Context is matrix-only on the night sky (no inset mini-map); job progress shows once per surface
+- Map HUD fades while aiming; empty library exposes Index / Folder / Scan / Listen on the map; mode chip in the top bar; pin/love flash confirmation; Listen is the primary library verb (Scan/Rescan under Advanced); Context is matrix-only on the night sky (no inset mini-map); job progress shows once per surface; search field is local-draft + debounced
 - Lens drag no longer walks every star for hover, reallocates the shade path, or sends Python a classify on each move
 - Listen analysis matches desktop **1.3.6**: three-section intro/mid/late windows, loudness-normalized Glow/Kinetic, placement honesty (dialogue drop, pitch Glow, slope, sub-bass, keyword undo), shape/timbre/steer leftovers, and kept-prior conclude so a later PCM miss does not re-queue the library
 - Shared engine no longer needs Qt for paths, scan, or the listening session (`meridian.paths`, `meridian.scan_core`, `meridian.android_session`)
@@ -27,7 +32,7 @@ First published Android package on this repo’s Releases page: **`Meridian-1.3.
 - Mood map viewport-culls stars, caps labels, and fades glow/chrome with zoom; dragging near a star names it
 - Settings Appearance / Privacy / About open real pages; More can index all audio on the phone
 - GitHub Release APK is **arm64-v8a**, signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
-- GitHub Release workflow runs `android/scripts/build-media3-ffmpeg.sh` (arm64) before `assembleRelease` so the APK includes FFmpeg fallbacks for formats MediaCodec cannot open
+- GitHub Release workflow packages the APK plus a `git archive` source tarball, and runs `android/scripts/build-media3-ffmpeg.sh` (arm64) before `assembleRelease` so the APK includes FFmpeg fallbacks for formats MediaCodec cannot open
 - Linux desktop app is unchanged for users (PySide6 still talks to the same scan helpers)
 
 ## [1.3.5](https://github.com/dark1ltg/Meridian/releases/tag/v1.3.5) — 2026-09-06 (AppImage refreshed 2026-09-09)

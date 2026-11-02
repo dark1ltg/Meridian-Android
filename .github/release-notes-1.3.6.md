@@ -1,26 +1,31 @@
-Meridian Android **1.3.6** — installable APK on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases) page (published **2026-11-02**; rebuild includes Media3 FFmpeg JNI).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-02**).
 
-**Download:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~35.3 MB)  
-**SHA-256:** `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290`  
-Checksum file: [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)
+## Downloads
+
+| Asset | |
+|---|---|
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
+| **APK checksum** | [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — full tree at this release commit |
+| **Source checksum** | [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
-Install on an **arm64** phone (Unihertz Titan 2 and most current Android devices). Enable “install from this source” when the system asks.
-
 ## What’s in this build
-- **Listen 1.3.6** — same three-section intro/mid/late analysis as the Linux app
-- **Smooth lens** — the mood-map ring tracks your finger at display refresh; the queue updates when you lift or pause
+- **Listen 1.3.6** — intro/mid/late analysis, loudness-normalized Glow/Kinetic, placement honesty, shape/timbre/steer, kept-prior conclude
+- **Smooth lens** — map HUD fades while aiming; ring tracks at display refresh; queue commits on lift / idle
+- **UI** — empty-library actions on Map, Listen-primary library settings, Context matrix on the night sky, debounced search field, pin/love confirmation
 - Lockscreen / notification playback, ~3s crossfade, scan + Listen on device
-- Native **aubio** (`libmeridian_aubio.so`) and Media3 **FFmpeg JNI** (`libffmpegJNI.so`) for Listen/playback fallback
+- Native **aubio** + Media3 **FFmpeg JNI** (`libffmpegJNI.so`) for Listen/playback fallback
 
 ## Notes
-- Minimum **Android 8.0 (API 26)**
-- arm64-v8a only (Titan 2 / modern phones). Rebuild locally for x86_64 emulator.
-- Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`) so later GitHub APKs can update this install
+- Minimum **Android 8.0 (API 26)**; **versionCode 137** / versionName 1.3.6
+- arm64-v8a only (Titan 2 / modern phones)
+- Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file
+- GPL-3.0-only; source tarball matches the tagged tree (see also `SOURCE_OFFER.txt`)
 
 Linux AppImage stays on [dark1ltg/Meridian releases](https://github.com/dark1ltg/Meridian/releases).

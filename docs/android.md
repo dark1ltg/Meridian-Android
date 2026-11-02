@@ -6,15 +6,16 @@ Playback uses AndroidX **Media3 / ExoPlayer**. The engine is CPython 3.12 via **
 
 ## What you get
 
-- Mood map as a nebula: drag empty sky to pan, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to zoom; tap a star to play, drag a star to pin. Titles show when zoomed in. The ring itself is a cheap overlay so aiming stays smooth on a Unihertz Titan 2 (1440×1440, Dimensity 7300 / Mali-G615); the neighborhood queue updates when you lift or pause.
-- Bottom navigation: Map, Queue, Context (listen matrix), More (folders, scan / Listen / rescan)
+- Mood map as a nebula: drag empty sky to pan, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to zoom; tap a star to play, drag a star to pin. Titles show when zoomed in. The ring itself is a cheap overlay so aiming stays smooth on a Unihertz Titan 2 (1440×1440, Dimensity 7300 / Mali-G615); HUD mood words fade while aiming; the neighborhood queue updates when you lift or pause.
+- Empty library surfaces Index / Folder / Scan / Listen on the map; pin and love flash a short confirmation
+- Bottom navigation: Map, Queue, Context (listen matrix on the night sky), More (folders, Listen primary, Scan / Rescan under Advanced)
 - Onboarding, music-folder permission, now playing (love + volume), and engine-backed “why this track”
 - Play Context starts the neighborhood queue from the lens
-- Modes: Focus, Wander, Charge, Dim (under More → Audio)
-- Search, love, skip / previous
+- Modes: Focus, Wander, Charge, Dim (mode chip in the top bar; also under More → Audio)
+- Debounced search, love, skip / previous
 - Add extra folders with the system directory picker. SD / USB trees are walked when they have a real path, or copied into app storage when they do not. **Index all audio on this phone** pulls directories from the system music catalog (MediaStore).
 
-- Scan and Listen report progress and can be cancelled
+- Scan and Listen report progress once per surface and can be cancelled
 - **Lockscreen / background playback** — a foreground `MediaSessionService` keeps audio going when the screen is locked or you switch apps. Notification and lockscreen show title, artist, play/pause, skip, and previous (no album art). Skip/previous still go through the context queue. Opening Meridian from those controls still requires the device lock (PIN, password, pattern, biometric, or face — whatever the phone uses). The app itself is never drawn over a locked keyguard.
 - **Crossfade** — two ExoPlayer decks overlap for ~3 seconds (InOutQuad), the same always-on rule as desktop. Skip, pause, and seek cut the fade short. Natural advance starts about a fade-length before the end of a long track.
 - **FFmpeg JNI** — Release CI builds `libffmpegJNI.so` into `android/app/src/main/jniLibs/arm64-v8a` via `android/scripts/build-media3-ffmpeg.sh` before packaging. Locally: `MERIDIAN_FFMPEG_ABIS=arm64-v8a bash android/scripts/build-media3-ffmpeg.sh` (or omit the env var for arm64 + x86_64). When present, ExoPlayer can prefer the Media3 FFmpeg renderer and Listen falls back to it when MediaCodec cannot decode the file.
@@ -27,14 +28,16 @@ export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.3.11579264
 bash android/scripts/build-media3-ffmpeg.sh
 ```
 
-## Install (release APK)
+## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02) — [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 137**).
 
-| | |
+| Asset | |
 |---|---|
-| **Size** | ~35.3 MB |
-| **SHA-256** | `98bd60348f094a64ca1ed72d0fa6bb81d89f567a504493f6aac075e12d868290` |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) |
+| **APK checksum** | [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source checksum** | [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` |
 
@@ -43,7 +46,7 @@ sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
-The release APK is signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`) so a later GitHub APK can replace this install. Play Store is not used. CI recipe: `.github/workflows/release-apk.yml` (`assembleRelease -Pabi=arm64-v8a`).
+The release APK is signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`) so a later GitHub APK can replace this install. Play Store is not used. CI recipe: `.github/workflows/release-apk.yml` (`assembleRelease -Pabi=arm64-v8a` + `git archive` source tarball).
 
 ## Build
 
