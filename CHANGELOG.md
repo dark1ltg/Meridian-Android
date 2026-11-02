@@ -5,9 +5,9 @@ All notable Meridian releases are listed here.
 - **Android APK:** [dark1ltg/Meridian-Android/releases](https://github.com/dark1ltg/Meridian-Android/releases)
 - **Linux AppImage:** [dark1ltg/Meridian/releases](https://github.com/dark1ltg/Meridian/releases)
 
-## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK, 2026-10-30
+## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK, 2026-11-02
 
-First published Android package (`Meridian-1.3.6-arm64.apk`) for Android 8.0+ / arm64. Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+First published Android package on this repo’s Releases page: **`Meridian-1.3.6-arm64.apk`** (~34.7 MB; SHA-256 `b73ed64e0a8a389cd986886da05334644ddf23b0fa4e2680be16bcccddf58cd4`) for Android 8.0+ / arm64. Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
 - Mood-map lens aims at pointer rate on Titan 2 class phones (1440×1440 @ 120 Hz): starfield stays put while the ring moves, HUD mood words update locally, and `set_lens` / queue rebuild wait for finger-up or 150 ms idle
 - Lens drag no longer walks every star for hover, reallocates the shade path, or sends Python a classify on each move
@@ -15,7 +15,7 @@ First published Android package (`Meridian-1.3.6-arm64.apk`) for Android 8.0+ / 
 - Shared engine no longer needs Qt for paths, scan, or the listening session (`meridian.paths`, `meridian.scan_core`, `meridian.android_session`)
 - Android 8.0+ (API 26) app under `android/`: Compose mood map / matrix / queue, Chaquopy Python engine, Media3 playback
 - Android UI uses bundled Ubuntu Sans / Ubuntu Condensed (same TTFs as the desktop app)
-- Listen on Android: MediaCodec PCM (11025 Hz mono), Media3 FFmpeg decoder fallback, native aubio onsets
+- Listen on Android: MediaCodec PCM (11025 Hz mono) first; optional Media3 FFmpeg JNI fallback when `libffmpegJNI.so` is rebuilt into the tree; native aubio onsets (`libmeridian_aubio.so` ships in the v1.3.6 APK)
 - Android listen matrix, SAF folders, scan/Listen progress + cancel, skip/finish mood nudge, honest “why”, map pan/zoom labels, love / volume
 - Foreground Media3 session: lockscreen controls, notification, and continued play after leaving the app
 - Opening the app from lockscreen media controls requires the device credential (PIN / password / biometric / face); Meridian is not shown over a locked keyguard
@@ -25,8 +25,8 @@ First published Android package (`Meridian-1.3.6-arm64.apk`) for Android 8.0+ / 
 - Index all device audio via MediaStore; SAF USB/SD trees walk as real `/storage/…` paths or copy into app files when the OS has no path
 - Mood map viewport-culls stars, caps labels, and fades glow/chrome with zoom; dragging near a star names it
 - Settings Appearance / Privacy / About open real pages; More can index all audio on the phone
-- Android APK ships Media3 FFmpeg JNI (`libffmpegJNI.so`) for Listen fallback and ExoPlayer extension renderers (FLAC / Opus / Vorbis / WMA when MediaCodec cannot)
-- GitHub Release APK is arm64, signed with the public sideload key in `android/keystore/`
+- GitHub Release APK is **arm64-v8a**, signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
+- This first GitHub package relies on **platform MediaCodec** for Listen when FFmpeg JNI is not present; rebuild with `android/scripts/build-media3-ffmpeg.sh` to bundle `libffmpegJNI.so` for FLAC/Opus/Vorbis/WMA-class fallbacks
 - Linux desktop app is unchanged for users (PySide6 still talks to the same scan helpers)
 
 ## [1.3.5](https://github.com/dark1ltg/Meridian/releases/tag/v1.3.5) — 2026-09-06 (AppImage refreshed 2026-09-09)

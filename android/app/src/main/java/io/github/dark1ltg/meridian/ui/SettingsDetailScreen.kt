@@ -44,7 +44,7 @@ fun SettingsDetailScreen(page: SettingsPage, onBack: () -> Unit, modifier: Modif
 
             Your library is a night sky. Navigate by feel.
 
-            Engine: the same Python mood map, listen matrix, and context queue as the Linux app (Chaquopy), including 1.3.6 three-section Listen. Playback: Media3 with a ~3s dual-deck crossfade. Listen decode: MediaCodec, then bundled FFmpeg JNI. Rhythm: aubio.
+            Engine: the same Python mood map, listen matrix, and context queue as the Linux app (Chaquopy), including 1.3.6 three-section Listen. Playback: Media3 with a ~3s dual-deck crossfade. Listen decode: MediaCodec first (optional Media3 FFmpeg JNI when libffmpegJNI.so is present). Rhythm: aubio.
 
             Ubuntu Sans / Ubuntu Condensed — Ubuntu Font Licence 1.0.
         """.trimIndent()

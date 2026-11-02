@@ -47,7 +47,7 @@ That gives a starting “neighborhood” — like “this is probably metal-ener
 
 Desktop asks the host `ffmpeg` for those section windows. Meridian does **not** ship `ffmpeg` inside the AppImage — it must be on the host `PATH`.
 
-On Android, the same window plan is decoded on-device: **MediaCodec** first, then the bundled **Media3 FFmpeg** JNI. The Python merge/honesty math is shared.
+On Android, the same window plan is decoded on-device: **MediaCodec** first, then **Media3 FFmpeg** JNI when `libffmpegJNI.so` is present in the APK (the first v1.3.6 GitHub package uses MediaCodec only). The Python merge/honesty math is shared.
 
 - Seeks stay inside the known duration (unknown length → about **28 seconds** from the start, not a tiny stub).  
 - On long tracks, intro / mid / late are compared. A silent or cold-open intro does **not** veto a clear mid+late body. When mid and late **agree closely** *and* the intro is clearly offset (not a mild build-up), Meridian soft-biases that body so a flashy intro can’t yank the pin — normal intros keep more say. When sections disagree, it keeps the **steadier** song-like taste and may inject contrast from a more active window — not a fake middle.  

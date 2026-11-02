@@ -10,10 +10,16 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 
 ## Download
 
-Get **Meridian 1.3.6** for Android (arm64 APK) from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page.
+Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page:
+
+- **File:** `Meridian-1.3.6-arm64.apk` (~34.7 MB, arm64-v8a)
+- **SHA-256:** `b73ed64e0a8a389cd986886da05334644ddf23b0fa4e2680be16bcccddf58cd4`
+- **Published:** 2026-11-02
 
 ```bash
-# after downloading Meridian-1.3.6-arm64.apk
+# verify, then install
+sha256sum -c Meridian-1.3.6-arm64.apk.sha256
+# or: echo 'b73ed64e0a8a389cd986886da05334644ddf23b0fa4e2680be16bcccddf58cd4  Meridian-1.3.6-arm64.apk' | sha256sum -c
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
@@ -28,8 +34,8 @@ On the phone: open the APK, allow install from that source if asked. Needs **And
 - **Honest why** — queue reasons use fit, importance, love, pins, play/skip counts, clock band, and mode
 - **Background playback** — lockscreen and notification controls; audio keeps going when you switch apps
 - **Crossfade** — ~3s overlap between tracks (always-on dual-deck)
-- **FFmpeg** — bundled Media3 JNI decoder for Listen and playback when the platform codec cannot open a file
-- **Local analysis** — tags plus intro / mid / late 12s listens (same 1.3.6 honesty as desktop); bundled **aubio** for tempo/onset cues
+- **Decode** — Listen prefers MediaCodec; optional Media3 FFmpeg JNI when `libffmpegJNI.so` is rebuilt into the APK (not in the first v1.3.6 GitHub package)
+- **Local analysis** — tags plus intro / mid / late 12s listens (same 1.3.6 honesty as desktop); bundled **aubio** (`libmeridian_aubio.so`) for tempo/onset cues
 - **Pins & search** — drag a star to lock its mood; search by title, artist, album, or path
 
 Minimum: **Android 8.0 (API 26)**. Default library folder: the device **Music** directory. Grant `READ_EXTERNAL_STORAGE` (Android 8–12) or `READ_MEDIA_AUDIO` (13+).
