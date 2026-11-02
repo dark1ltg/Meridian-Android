@@ -96,11 +96,10 @@ OpenSSL (libssl/libcrypto) — Apache-2.0  Texts: third-party/openssl/
 See BUILD_LIBRARIES.txt for which of these were detected in a given build.
 
 ----------------------------------------------------------------------------
-FFmpeg JNI on Android (optional libffmpegJNI.so)
+FFmpeg JNI on Android (libffmpegJNI.so)
 ----------------------------------------------------------------------------
-Purpose:  Media3 FFmpeg audio decoder / renderer fallback (Listen + playback)
-          when libffmpegJNI.so is present under android/app/src/main/jniLibs.
-          The first v1.3.6 GitHub APK does not ship this library (MediaCodec only).
+Purpose:  Media3 FFmpeg audio decoder / renderer fallback (Listen + playback).
+          Built into release APKs by CI (`MERIDIAN_FFMPEG_ABIS=arm64-v8a`).
 License:  FFmpeg n6.1.1 configured `--disable-everything` plus listed audio
           decoders (LGPL-2.1+ / GPL-2.1+ as published by FFmpeg; this tree is
           GPL-3.0-only so redistribution is as a GPL combined work).

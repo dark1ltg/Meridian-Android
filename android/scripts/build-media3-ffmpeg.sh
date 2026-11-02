@@ -17,7 +17,13 @@ JNI="$WORK/jni"
 FFMPEG="$JNI/ffmpeg"
 OUT_LIBS="${ROOT}/android/app/src/main/jniLibs"
 ENABLED_DECODERS=(vorbis opus flac alac mp3 aac pcm_s16le pcm_s24le pcm_f32le wmav2)
-ABIS=(arm64-v8a x86_64)
+# Comma/space-separated override, e.g. MERIDIAN_FFMPEG_ABIS=arm64-v8a for release CI.
+if [[ -n "${MERIDIAN_FFMPEG_ABIS:-}" ]]; then
+  # shellcheck disable=SC2206
+  ABIS=(${MERIDIAN_FFMPEG_ABIS//,/ })
+else
+  ABIS=(arm64-v8a x86_64)
+fi
 MEDIA3_JNI_BASE="https://raw.githubusercontent.com/androidx/media/1.4.1/libraries/decoder_ffmpeg/src/main/jni"
 
 if [[ ! -d "$NDK" ]]; then
@@ -123,7 +129,19 @@ build_ffmpeg_abi() {
   make distclean >/dev/null 2>&1 || true
 }
 
-build_ffmpeg_abi arm64-v8a aarch64 armv8-a aarch64-linux-android
-build_ffmpeg_abi x86_64 x86_64 x86-64 x86_64-linux-android "" "" "--disable-asm"
+for abi in "${ABIS[@]}"; do
+  case "$abi" in
+    arm64-v8a)
+      build_ffmpeg_abi arm64-v8a aarch64 armv8-a aarch64-linux-android
+      ;;
+    x86_64)
+      build_ffmpeg_abi x86_64 x86_64 x86-64 x86_64-linux-android "" "" "--disable-asm"
+      ;;
+    *)
+      echo "Unsupported ABI for FFmpeg JNI: $abi" >&2
+      exit 1
+      ;;
+  esac
+done
 
 echo "FFmpeg JNI ready under $OUT_LIBS"

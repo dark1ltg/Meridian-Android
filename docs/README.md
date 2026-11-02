@@ -15,7 +15,7 @@ Release history is in [CHANGELOG.md](../CHANGELOG.md).
 | **OS** | Android **8.0+** (API 26) |
 | **CPU** | **arm64-v8a** (Unihertz Titan 2, Pixel, and most current phones) |
 | **Install** | Sideload [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (`adb install -r` or open the file) |
-| **Checksum** | SHA-256 `b73ed64e0a8a389cd986886da05334644ddf23b0fa4e2680be16bcccddf58cd4` ([`.sha256` file](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
+| **Checksum** | [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) on the release |
 | **Signature** | Public sideload key in `android/keystore/` (not Play Store); cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9` |
 
 ## System requirements (release AppImage)
