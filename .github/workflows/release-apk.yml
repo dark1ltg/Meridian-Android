@@ -32,14 +32,34 @@ jobs:
       - name: Apply 1.3.6 source patches
         run: |
           set -euo pipefail
-          for p in patches/01-features.patch patches/02-engine.patch \
-                   patches/03-tests.patch patches/04-android.patch \
-                   patches/05-docs.patch; do
-            if [ -f "$p" ]; then
-              echo "apply $p"
-              git apply --whitespace=nowarn "$p"
-            fi
-          done
+          python3 - <<'PY'
+          import base64, gzip, pathlib, subprocess, sys
+          root = pathlib.Path("patches")
+          stems = [
+              "01-features",
+              "02-engine",
+              "03-tests",
+              "04-android",
+              "05-docs",
+          ]
+          for stem in stems:
+              raw = root / f"{stem}.patch"
+              packed = root / f"{stem}.patch.gz.b64"
+              parts = sorted(root.glob(f"{stem}.part-*.b64"))
+              dest = pathlib.Path(f"/tmp/{stem}.patch")
+              if raw.is_file():
+                  dest.write_bytes(raw.read_bytes())
+              elif packed.is_file():
+                  dest.write_bytes(gzip.decompress(base64.b64decode(packed.read_text())))
+              elif parts:
+                  blob = "".join(p.read_text() for p in parts)
+                  dest.write_bytes(gzip.decompress(base64.b64decode(blob)))
+              else:
+                  print(f"missing patch for {stem}", file=sys.stderr)
+                  sys.exit(1)
+              print(f"apply {stem} ({dest.stat().st_size} bytes)")
+              subprocess.check_call(["git", "apply", "--whitespace=nowarn", str(dest)])
+          PY
 
       - name: JDK 17
         uses: actions/setup-java@v4
