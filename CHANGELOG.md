@@ -19,7 +19,7 @@ First published Android package on this repo’s Releases page: **`Meridian-1.3.
 - Android listen matrix, SAF folders, scan/Listen progress + cancel, skip/finish mood nudge, honest “why”, map pan/zoom labels, love / volume
 - Foreground Media3 session: lockscreen controls, notification, and continued play after leaving the app
 - Opening the app from lockscreen media controls requires the device credential (PIN / password / biometric / face); Meridian is not shown over a locked keyguard
-- Queue, why-this-track, and lockscreen/notification chrome use generated art only (no embedded album covers); Map has no mini player — transport stays on the system media session / Now Playing when opened from a track
+- Mini player, queue, why-this-track, and lockscreen/notification chrome use generated art only (no embedded album covers)
 - Android playback uses the same always-on ~3s dual-deck crossfade as desktop (skip / pause / seek interrupt the fade; near-end auto-advance)
 - Crossfade listen credit matches desktop: deferred play_count, 8s skip/finish on jumps, finish-nudge the outgoing track when a natural fade lands, Prev restores the outgoing song
 - Index all device audio via MediaStore; SAF USB/SD trees walk as real `/storage/…` paths or copy into app files when the OS has no path
