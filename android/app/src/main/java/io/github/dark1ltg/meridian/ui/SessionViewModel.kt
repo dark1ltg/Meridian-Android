@@ -45,6 +45,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<UiState> = _state
     private var work: Job? = null
     private var lensFlush: Job? = null
+    private var searchJob: Job? = null
     private var pendingLens: Triple<Float, Float, Float>? = null
     private val bootMutex = Mutex()
     private var booted = false
@@ -184,7 +185,22 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun love(id: Int) = call("love", JSONObject().put("id", id))
 
-    fun search(query: String) = call("search", JSONObject().put("query", query))
+    /**
+     * Debounced library search. The TextField must keep its own draft string —
+     * binding it to [EngineSnapshot.searchQuery] makes every keystroke wait on
+     * Chaquopy and late snapshots yank the cursor backward.
+     */
+    fun search(query: String) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(140)
+            ensureBoot()
+            val snap = withContext(Dispatchers.IO) {
+                engine.call("search", JSONObject().put("query", query))
+            }
+            applySnap(snap)
+        }
+    }
 
     fun scan() = heavy("scan") { JSONObject() }
 
@@ -286,7 +302,16 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun toggleSearch(open: Boolean) {
         _state.update { it.copy(searchOpen = open) }
-        if (!open) search("")
+        if (!open) {
+            searchJob?.cancel()
+            searchJob = viewModelScope.launch {
+                ensureBoot()
+                val snap = withContext(Dispatchers.IO) {
+                    engine.call("search", JSONObject().put("query", ""))
+                }
+                applySnap(snap)
+            }
+        }
     }
 
     private fun heavy(method: String, payload: () -> JSONObject) {

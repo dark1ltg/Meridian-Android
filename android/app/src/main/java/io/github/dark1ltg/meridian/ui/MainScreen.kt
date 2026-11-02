@@ -209,11 +209,13 @@ fun MainScreen(
         }
         if (overlay is Overlay.Search || ui.searchOpen) {
             SearchOverlay(
-                query = snap.searchQuery,
+                initialQuery = snap.searchQuery,
                 rows = snap.search,
                 currentId = snap.current?.id,
                 onQuery = onSearch,
                 onPlay = onPlay,
+                onLove = onLove,
+                onOpenWhy = { overlay = Overlay.Why(it) },
                 onClose = {
                     overlay = Overlay.None
                     onToggleSearch()
@@ -515,13 +517,18 @@ private fun NavItem(label: String, icon: ImageVector, selected: Boolean, onClick
 
 @Composable
 private fun SearchOverlay(
-    query: String,
+    initialQuery: String,
     rows: List<TrackRow>,
     currentId: Int?,
     onQuery: (String) -> Unit,
     onPlay: (Int) -> Unit,
+    onLove: (Int) -> Unit,
+    onOpenWhy: (Int) -> Unit,
     onClose: () -> Unit,
 ) {
+    // Local draft owns the caret. Engine results update [rows] async; never feed
+    // snapshot.searchQuery back into the field while typing.
+    var draft by remember { mutableStateOf(initialQuery) }
     Column(
         Modifier
             .fillMaxSize()
@@ -531,8 +538,11 @@ private fun SearchOverlay(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
-                value = query,
-                onValueChange = onQuery,
+                value = draft,
+                onValueChange = { next ->
+                    draft = next
+                    onQuery(next)
+                },
                 modifier = Modifier.weight(1f),
                 placeholder = { Text("Title, artist, album") },
                 singleLine = true,
@@ -551,8 +561,16 @@ private fun SearchOverlay(
             )
         }
         LazyColumn(Modifier.padding(top = 12.dp)) {
-            if (query.isNotBlank() && rows.isEmpty()) {
-                item { Text("No matches.", color = Mute) }
+            if (draft.isBlank()) {
+                item {
+                    Text(
+                        "Type a title, artist, or album.",
+                        color = Mute,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            } else if (rows.isEmpty()) {
+                item { Text("No matches.", color = Mute, modifier = Modifier.padding(top = 8.dp)) }
             }
             items(rows, key = { it.id }) { row ->
                 QueueRow(
@@ -560,8 +578,8 @@ private fun SearchOverlay(
                     row = row,
                     active = row.id == currentId,
                     onPlay = { onPlay(row.id) },
-                    onLove = {},
-                    onOpenWhy = { onPlay(row.id) },
+                    onLove = { onLove(row.id) },
+                    onOpenWhy = { onOpenWhy(row.id) },
                 )
             }
         }
