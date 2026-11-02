@@ -20,6 +20,7 @@ android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
+android/keystore/sideload.jks
 android/app/src/main/python/meridian/
 android/.ffmpeg-build/
 android/app/.cxx/

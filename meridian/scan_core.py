@@ -196,18 +196,48 @@ def analyze_pending(
             )
             if should_stop():
                 break
-            library.set_analyzed_mood(
-                track.id,
-                result.valence,
-                result.energy,
-                result.bpm,
-                confidence=result.confidence,
-                low_trust=result.low_trust,
-                confidence_note=result.confidence_note,
-                onset_consistency=result.onset_consistency,
-                acoustic_flux=result.acoustic_flux,
-                brightness=result.brightness,
-            )
+            if not result.pcm_ok:
+                # No waveform this pass. Prior PCM → keep placement and conclude.
+                # Seed-only → still show on the map. Otherwise defer for retry.
+                if library.had_pcm_acoustics(track.id):
+                    library.conclude_kept_prior(track.id)
+                elif result.seed_evidence:
+                    library.set_analyzed_mood(
+                        track.id,
+                        result.valence,
+                        result.energy,
+                        result.bpm,
+                        confidence=result.confidence,
+                        low_trust=result.low_trust,
+                        confidence_note=result.confidence_note,
+                        onset_consistency=result.onset_consistency,
+                        acoustic_flux=result.acoustic_flux,
+                        brightness=result.brightness,
+                        shape_note=result.shape_note,
+                        timbre_flag=result.timbre_flag,
+                        timbre_source=result.timbre_source,
+                        steer_weight=result.steer_weight,
+                        from_pcm=False,
+                    )
+                else:
+                    library.defer_analyze(track.id)
+            else:
+                library.set_analyzed_mood(
+                    track.id,
+                    result.valence,
+                    result.energy,
+                    result.bpm,
+                    confidence=result.confidence,
+                    low_trust=result.low_trust,
+                    confidence_note=result.confidence_note,
+                    onset_consistency=result.onset_consistency,
+                    acoustic_flux=result.acoustic_flux,
+                    brightness=result.brightness,
+                    shape_note=result.shape_note,
+                    timbre_flag=result.timbre_flag,
+                    timbre_source=result.timbre_source,
+                    steer_weight=result.steer_weight,
+                )
         except Exception:
             library.mark_analyze_failed(track.id)
             continue

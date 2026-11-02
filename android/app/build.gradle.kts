@@ -1,3 +1,5 @@
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -14,8 +16,8 @@ android {
         applicationId = "io.github.dark1ltg.meridian"
         minSdk = 26
         targetSdk = 34
-        versionCode = 135
-        versionName = "1.3.5"
+        versionCode = 136
+        versionName = "1.3.6"
         ndk {
             val abi = (project.findProperty("abi") as String?)?.trim().orEmpty()
             abiFilters += if (abi.isNotEmpty()) {
@@ -31,6 +33,24 @@ android {
         }
     }
 
+    signingConfigs {
+        val sideloadStore = rootProject.file("keystore/sideload.jks")
+        val sideloadB64 = rootProject.file("keystore/sideload.jks.b64")
+        if (!sideloadStore.isFile && sideloadB64.isFile) {
+            sideloadStore.parentFile.mkdirs()
+            sideloadStore.writeBytes(
+                Base64.getDecoder().decode(sideloadB64.readText().trim()),
+            )
+        }
+        if (sideloadStore.isFile) {
+            create("sideload") {
+                storeFile = sideloadStore
+                storePassword = "meridian-sideload"
+                keyAlias = "meridian"
+                keyPassword = "meridian-sideload"
+            }
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -38,6 +58,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.findByName("sideload")
+                ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {

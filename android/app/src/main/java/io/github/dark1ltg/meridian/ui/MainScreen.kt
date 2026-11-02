@@ -305,18 +305,23 @@ private fun MapTab(
     onCancelJob: () -> Unit,
 ) {
     val snap = ui.snapshot
-    val nearby = snap.stars.count { inLens(it, snap.lensX, snap.lensY, snap.lensRadius) }
+    val lensAim = remember { LensAim(snap.lensX, snap.lensY, snap.lensRadius) }
+    val nearby = snap.stars.count { inLens(it, lensAim.x, lensAim.y, lensAim.radius) }
         .coerceAtLeast(snap.queue.size)
-    val (glow, kinetic) = moodWord(snap.lensX, snap.lensY)
-    var skyHint by remember { mutableStateOf("") }
+    val (glow, kinetic) = moodWord(lensAim.x, lensAim.y)
+    val skyHintState = remember { mutableStateOf("") }
+    val skyHint = skyHintState.value
+    val onHover = remember {
+        { text: String -> skyHintState.value = text }
+    }
     Box(Modifier.fillMaxSize()) {
         MoodMap(
             snapshot = snap,
             onLens = onLens,
             onPlay = onPlay,
             onPin = onPin,
-            onHover = { skyHint = it },
-            modifier = Modifier.fillMaxSize(),
+            onHover = onHover,
+            lensAim = lensAim,
         )
         Column(
             Modifier

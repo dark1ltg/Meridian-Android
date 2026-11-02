@@ -1,9 +1,17 @@
 # Changelog
 
-All notable Meridian releases are listed here. Download AppImages from [Releases](https://github.com/dark1ltg/Meridian/releases).
+All notable Meridian releases are listed here.
 
-## Unreleased — Android 8 port (local tree)
+- **Android APK:** [dark1ltg/Meridian-Android/releases](https://github.com/dark1ltg/Meridian-Android/releases)
+- **Linux AppImage:** [dark1ltg/Meridian/releases](https://github.com/dark1ltg/Meridian/releases)
 
+## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK, 2026-10-30
+
+First published Android package (`Meridian-1.3.6-arm64.apk`) for Android 8.0+ / arm64. Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+- Mood-map lens aims at pointer rate on Titan 2 class phones (1440×1440 @ 120 Hz): starfield stays put while the ring moves, HUD mood words update locally, and `set_lens` / queue rebuild wait for finger-up or 150 ms idle
+- Lens drag no longer walks every star for hover, reallocates the shade path, or sends Python a classify on each move
+- Listen analysis matches desktop **1.3.6**: three-section intro/mid/late windows, loudness-normalized Glow/Kinetic, placement honesty (dialogue drop, pitch Glow, slope, sub-bass, keyword undo), shape/timbre/steer leftovers, and kept-prior conclude so a later PCM miss does not re-queue the library
 - Shared engine no longer needs Qt for paths, scan, or the listening session (`meridian.paths`, `meridian.scan_core`, `meridian.android_session`)
 - Android 8.0+ (API 26) app under `android/`: Compose mood map / matrix / queue, Chaquopy Python engine, Media3 playback
 - Android UI uses bundled Ubuntu Sans / Ubuntu Condensed (same TTFs as the desktop app)
@@ -18,6 +26,7 @@ All notable Meridian releases are listed here. Download AppImages from [Releases
 - Mood map viewport-culls stars, caps labels, and fades glow/chrome with zoom; dragging near a star names it
 - Settings Appearance / Privacy / About open real pages; More can index all audio on the phone
 - Android APK ships Media3 FFmpeg JNI (`libffmpegJNI.so`) for Listen fallback and ExoPlayer extension renderers (FLAC / Opus / Vorbis / WMA when MediaCodec cannot)
+- GitHub Release APK is arm64, signed with the public sideload key in `android/keystore/`
 - Linux desktop app is unchanged for users (PySide6 still talks to the same scan helpers)
 
 ## [1.3.5](https://github.com/dark1ltg/Meridian/releases/tag/v1.3.5) — 2026-09-06 (AppImage refreshed 2026-09-09)

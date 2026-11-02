@@ -39,12 +39,12 @@ fun SettingsDetailScreen(page: SettingsPage, onBack: () -> Unit, modifier: Modif
             Opening Meridian from those controls still requires your device lock.
         """.trimIndent()
         SettingsPage.About -> "About" to """
-            Meridian 1.3.5
+            Meridian 1.3.6
             GPL-3.0-only
 
             Your library is a night sky. Navigate by feel.
 
-            Engine: the same Python mood map, listen matrix, and context queue as the Linux app (Chaquopy). Playback: Media3 with a ~3s dual-deck crossfade. Listen decode: MediaCodec, then bundled FFmpeg JNI. Rhythm: aubio.
+            Engine: the same Python mood map, listen matrix, and context queue as the Linux app (Chaquopy), including 1.3.6 three-section Listen. Playback: Media3 with a ~3s dual-deck crossfade. Listen decode: MediaCodec, then bundled FFmpeg JNI. Rhythm: aubio.
 
             Ubuntu Sans / Ubuntu Condensed — Ubuntu Font Licence 1.0.
         """.trimIndent()

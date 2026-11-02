@@ -44,6 +44,8 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state
     private var work: Job? = null
+    private var lensFlush: Job? = null
+    private var pendingLens: Triple<Float, Float, Float>? = null
     private val bootMutex = Mutex()
     private var booted = false
     var onPickFolder: (() -> Unit)? = null
@@ -98,10 +100,29 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setLens(x: Float, y: Float, radius: Float) {
-        call(
-            "set_lens",
-            JSONObject().put("x", x.toDouble()).put("y", y.toDouble()).put("radius", radius.toDouble()),
-        )
+        val nx = x.coerceIn(0f, 1f)
+        val ny = y.coerceIn(0f, 1f)
+        val nr = radius
+        pendingLens = Triple(nx, ny, nr)
+        _state.update { it.copy(snapshot = it.snapshot.copy(lensX = nx, lensY = ny, lensRadius = nr)) }
+        if (lensFlush?.isActive == true) return
+        lensFlush = viewModelScope.launch {
+            ensureBoot()
+            while (isActive) {
+                val next = pendingLens ?: break
+                pendingLens = null
+                val snap = withContext(Dispatchers.IO) {
+                    engine.call(
+                        "set_lens",
+                        JSONObject()
+                            .put("x", next.first.toDouble())
+                            .put("y", next.second.toDouble())
+                            .put("radius", next.third.toDouble()),
+                    )
+                }
+                applySnap(snap)
+            }
+        }
     }
 
     fun setMode(mode: String) = call("set_mode", JSONObject().put("mode", mode))
@@ -308,13 +329,19 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun applySnap(snap: EngineSnapshot) {
-        val msg = when {
-            !snap.ok -> snap.error.ifBlank { "Something went wrong." }
-            snap.status.isNotBlank() -> snap.status
-            snap.trackCount == 0 -> "Add Music, then Scan. Files stay on this phone."
-            else -> "${snap.trackCount} tracks · ${snap.bandLabel} · ${snap.mode.replaceFirstChar { it.uppercase() }}"
+        val newer = pendingLens
+        val merged = if (newer != null) {
+            snap.copy(lensX = newer.first, lensY = newer.second, lensRadius = newer.third)
+        } else {
+            snap
         }
-        _state.update { it.copy(snapshot = snap, message = msg, job = snap.job) }
+        val msg = when {
+            !merged.ok -> merged.error.ifBlank { "Something went wrong." }
+            merged.status.isNotBlank() -> merged.status
+            merged.trackCount == 0 -> "Add Music, then Scan. Files stay on this phone."
+            else -> "${merged.trackCount} tracks · ${merged.bandLabel} · ${merged.mode.replaceFirstChar { it.uppercase() }}"
+        }
+        _state.update { it.copy(snapshot = merged, message = msg, job = merged.job) }
     }
 
     override fun onCleared() {

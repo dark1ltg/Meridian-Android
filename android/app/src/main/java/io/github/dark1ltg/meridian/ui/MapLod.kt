@@ -11,6 +11,21 @@ object MapLod {
     const val CHROME_END = 2.4f
     const val MAX_LABELS = 48
     const val CULL_PAD = 72f
+    const val LENS_COMMIT_IDLE_MS = 150L
+    const val TITAN2_MIN_PX = 1440f
+
+    fun galaxyBudget(compact: Boolean, starCount: Int, minDimPx: Float = 0f): Int {
+        val highRes = minDimPx >= 1200f
+        return when {
+            compact -> if (highRes) 220 else 280
+            starCount > 900 -> if (highRes) 360 else 420
+            else -> if (highRes) 560 else 720
+        }
+    }
+
+    fun shouldFlushLens(pointerReleased: Boolean, idleSinceMoveMs: Long, settleMs: Long = LENS_COMMIT_IDLE_MS): Boolean {
+        return pointerReleased || idleSinceMoveMs >= settleMs
+    }
 
     fun chromeAlpha(zoom: Float): Float {
         if (zoom <= CHROME_START) return 0.55f

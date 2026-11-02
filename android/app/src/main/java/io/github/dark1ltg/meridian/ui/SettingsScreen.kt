@@ -180,7 +180,7 @@ fun SettingsScreen(
         )
         SettingsRow(Icons.Outlined.Tune, "Listening mode", "Focus, Wander, Charge, Dim — chips above")
         SettingsRow(Icons.Outlined.Shield, "Privacy", "Nothing leaves this phone") { onOpen(SettingsPage.Privacy) }
-        SettingsRow(Icons.Outlined.Info, "About", "Meridian 1.3.5") { onOpen(SettingsPage.About) }
+        SettingsRow(Icons.Outlined.Info, "About", "Meridian 1.3.6") { onOpen(SettingsPage.About) }
         Spacer(Modifier.height(12.dp))
         Text(
             "Offline. Local. Yours. No accounts, no cloud, no store sync.",

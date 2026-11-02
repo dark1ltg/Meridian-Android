@@ -5,6 +5,18 @@ Extra guides for how Meridian listens to your files and puts them on the mood ma
 The [main README](../README.md) is the short “what is this / how do I run it” page.  
 Release history is in [CHANGELOG.md](../CHANGELOG.md).
 
+**Android APK** (this tree): [Meridian-Android releases](https://github.com/dark1ltg/Meridian-Android/releases) — current **[v1.3.6 arm64](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)**.  
+**Linux AppImage** (desktop tree): [Meridian releases](https://github.com/dark1ltg/Meridian/releases).
+
+## System requirements (Android release APK)
+
+| | |
+|---|---|
+| **OS** | Android **8.0+** (API 26) |
+| **CPU** | **arm64-v8a** (Unihertz Titan 2, Pixel, and most current phones) |
+| **Install** | Sideload `Meridian-1.3.6-arm64.apk` from [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) (`adb install -r` or open the file) |
+| **Signature** | Public sideload key in `android/keystore/` (not Play Store) |
+
 ## System requirements (release AppImage)
 
 | | |

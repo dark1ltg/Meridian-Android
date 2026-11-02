@@ -1,5 +1,6 @@
 package io.github.dark1ltg.meridian.ui
 
+import android.graphics.Paint as AndroidPaint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -7,19 +8,23 @@ import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import android.graphics.Paint as AndroidPaint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -27,12 +32,57 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import io.github.dark1ltg.meridian.data.EngineSnapshot
 import io.github.dark1ltg.meridian.data.TrackRow
 import io.github.dark1ltg.meridian.ui.theme.LowTrust
 import io.github.dark1ltg.meridian.ui.theme.quadrantColor
 import kotlin.math.hypot
 import kotlin.math.min
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+/**
+ * Live lens aim. Mutable fields are Compose state so the ring and HUD can
+ * move at pointer rate without rebuilding [EngineSnapshot] or the starfield.
+ *
+ * Marked [Stable] so [MoodMap] can skip composition while only [x]/[y]/[radius]
+ * change (Titan 2 class: 1440×1440 @ 120 Hz, ~8–16 ms/frame).
+ */
+@Stable
+class LensAim(
+    x: Float = 0.5f,
+    y: Float = 0.5f,
+    radius: Float = 0.22f,
+) {
+    var x by mutableFloatStateOf(x.coerceIn(0f, 1f))
+        internal set
+    var y by mutableFloatStateOf(y.coerceIn(0f, 1f))
+        internal set
+    var radius by mutableFloatStateOf(radius.coerceIn(0.08f, 0.48f))
+        internal set
+    var dragging by mutableStateOf(false)
+        internal set
+
+    fun syncFrom(lx: Float, ly: Float, r: Float) {
+        if (dragging) return
+        x = lx.coerceIn(0f, 1f)
+        y = ly.coerceIn(0f, 1f)
+        radius = r.coerceIn(0.08f, 0.48f)
+    }
+
+    fun moveTo(lx: Float, ly: Float) {
+        x = lx.coerceIn(0f, 1f)
+        y = ly.coerceIn(0f, 1f)
+    }
+
+    fun resizeBy(factor: Float) {
+        radius = (radius * factor).coerceIn(0.08f, 0.48f)
+    }
+}
 
 @Composable
 fun MoodMap(
@@ -45,47 +95,82 @@ fun MoodMap(
     compact: Boolean = false,
     previewZoom: Float = 1f,
     onHover: (String) -> Unit = {},
+    lensAim: LensAim? = null,
 ) {
-    val fieldCount = when {
-        compact -> 280
-        snapshot.stars.size > 900 -> 420
-        else -> 900
+    val config = LocalConfiguration.current
+    val density = LocalDensity.current
+    val minDimPx = with(density) {
+        minOf(config.screenWidthDp.dp.toPx(), config.screenHeightDp.dp.toPx())
     }
+    val fieldCount = MapLod.galaxyBudget(compact, snapshot.stars.size, minDimPx)
     val field = remember(fieldCount) { galaxyField(seed = 42, count = fieldCount) }
+    val aim = lensAim ?: remember { LensAim(snapshot.lensX, snapshot.lensY, snapshot.lensRadius) }
     var pan by remember { mutableStateOf(Offset.Zero) }
     var zoom by remember { mutableFloatStateOf(previewZoom.coerceIn(1f, 3.2f)) }
     var hover by remember { mutableStateOf<Pair<Offset, String>?>(null) }
-    Canvas(
-        modifier = modifier
+    val latestOnLens = rememberUpdatedState(onLens)
+    val latestOnPlay = rememberUpdatedState(onPlay)
+    val latestOnPin = rememberUpdatedState(onPin)
+    val latestOnHover = rememberUpdatedState(onHover)
+    val latestStars = rememberUpdatedState(snapshot.stars)
+    val scope = rememberCoroutineScope()
+    val settleJob = remember { mutableStateOf<Job?>(null) }
+    val labelPaint = remember {
+        AndroidPaint().apply {
+            color = android.graphics.Color.argb(210, 246, 240, 232)
+            textSize = 26f
+            isAntiAlias = true
+            isFakeBoldText = true
+        }
+    }
+    val shadePath = remember { Path() }
+    LaunchedEffect(snapshot.lensX, snapshot.lensY, snapshot.lensRadius) {
+        aim.syncFrom(snapshot.lensX, snapshot.lensY, snapshot.lensRadius)
+    }
+    fun commitLens() {
+        settleJob.value?.cancel()
+        settleJob.value = null
+        latestOnLens.value(aim.x, aim.y, aim.radius)
+    }
+    fun scheduleLensCommit() {
+        settleJob.value?.cancel()
+        settleJob.value = scope.launch {
+            delay(MapLod.LENS_COMMIT_IDLE_MS)
+            latestOnLens.value(aim.x, aim.y, aim.radius)
+        }
+    }
+    Box(
+        modifier
             .fillMaxSize()
-            .pointerInput(snapshot.stars, compact) {
+            .pointerInput(compact) {
                 detectTapGestures { pos ->
                     nearest(
-                        snapshot.stars,
+                        latestStars.value,
                         pos,
                         size.width,
                         size.height,
                         44f,
                         pan,
                         zoom,
-                    )?.let { onPlay(it.id) }
+                    )?.let { latestOnPlay.value(it.id) }
                 }
             }
-            .pointerInput(snapshot.stars, snapshot.lensX, snapshot.lensY, snapshot.lensRadius, compact) {
+            .pointerInput(compact) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
+                    val stars = latestStars.value
                     var localPan = pan
                     var localZoom = zoom
-                    val star = nearest(snapshot.stars, down.position, size.width, size.height, 44f, localPan, localZoom)
+                    val star = nearest(stars, down.position, size.width, size.height, 44f, localPan, localZoom)
                     if (star != null) {
                         val sp = moodToPx(star.valence, star.energy, w, h, localPan, localZoom)
                         hover = sp to "${star.title} · ${star.artist}"
-                        onHover(hover!!.second)
+                        latestOnHover.value(hover!!.second)
                     }
-                    val lensPx = moodToPx(snapshot.lensX, snapshot.lensY, w, h, localPan, localZoom)
-                    val rr = snapshot.lensRadius.coerceIn(0.08f, 0.48f) * min(w, h) * localZoom
+                    val lensPx = moodToPx(aim.x, aim.y, w, h, localPan, localZoom)
+                    val rr = aim.radius.coerceIn(0.08f, 0.48f) * min(w, h) * localZoom
                     val nearLens = hypot(
                         (down.position.x - lensPx.x).toDouble(),
                         (down.position.y - lensPx.y).toDouble(),
@@ -94,64 +179,110 @@ fun MoodMap(
                     var lastPin = screenToMood(down.position, w, h, localPan, localZoom)
                     var moved = false
                     var travel = 0f
+                    var aimed = false
                     val pinSlop = 18f
-                    do {
-                        val event = awaitPointerEvent()
-                        val pressed = event.changes.filter { it.pressed }
-                        val zoomChange = event.calculateZoom()
-                        val panChange = event.calculatePan()
-                        val centroid = event.calculateCentroid(useCurrent = true)
-                        val liveLens = moodToPx(snapshot.lensX, snapshot.lensY, w, h, localPan, localZoom)
-                        val liveRr = snapshot.lensRadius.coerceIn(0.08f, 0.48f) * min(w, h) * localZoom
-                        if (pressed.size >= 2 && zoomChange != 1f) {
-                            pinId = null
-                            val inside = hypot(
-                                (centroid.x - liveLens.x).toDouble(),
-                                (centroid.y - liveLens.y).toDouble(),
-                            ) <= liveRr * 1.08
-                            if (inside || compact) {
-                                val r = (snapshot.lensRadius * zoomChange).coerceIn(0.08f, 0.48f)
-                                onLens(snapshot.lensX, snapshot.lensY, r)
-                            } else {
-                                localZoom = (localZoom * zoomChange).coerceIn(1f, 3.2f)
-                                zoom = localZoom
+                    try {
+                        do {
+                            val event = awaitPointerEvent()
+                            val pressed = event.changes.filter { it.pressed }
+                            val zoomChange = event.calculateZoom()
+                            val panChange = event.calculatePan()
+                            val centroid = event.calculateCentroid(useCurrent = true)
+                            val liveLens = moodToPx(aim.x, aim.y, w, h, localPan, localZoom)
+                            val liveRr = aim.radius.coerceIn(0.08f, 0.48f) * min(w, h) * localZoom
+                            if (pressed.size >= 2 && zoomChange != 1f) {
+                                pinId = null
+                                val inside = hypot(
+                                    (centroid.x - liveLens.x).toDouble(),
+                                    (centroid.y - liveLens.y).toDouble(),
+                                ) <= liveRr * 1.08
+                                if (inside || compact) {
+                                    aim.dragging = true
+                                    aim.resizeBy(zoomChange)
+                                    aimed = true
+                                    scheduleLensCommit()
+                                } else {
+                                    localZoom = (localZoom * zoomChange).coerceIn(1f, 3.2f)
+                                    zoom = localZoom
+                                }
+                                pressed.forEach { if (it.positionChanged()) it.consume() }
+                                moved = true
+                            } else if (pressed.size == 1 && (panChange.x != 0f || panChange.y != 0f)) {
+                                travel += hypot(panChange.x.toDouble(), panChange.y.toDouble()).toFloat()
+                                if (travel < pinSlop) {
+                                    continue
+                                }
+                                if (pinId == null && star != null) {
+                                    pinId = star.id
+                                }
+                                val p = pressed[0].position
+                                if (shouldHitTestStars(aimingLens = nearLens || compact || aimed, pinning = pinId != null)) {
+                                    val tip = nearest(stars, p, size.width, size.height, 56f, localPan, localZoom)
+                                    if (tip != null && pinId == null) {
+                                        val sp = moodToPx(tip.valence, tip.energy, w, h, localPan, localZoom)
+                                        hover = sp to "${tip.title} · ${tip.artist}"
+                                        latestOnHover.value(hover!!.second)
+                                    }
+                                }
+                                if (pinId != null) {
+                                    lastPin = screenToMood(p, w, h, localPan, localZoom)
+                                } else if (nearLens || compact) {
+                                    val mood = screenToMood(p, w, h, localPan, localZoom)
+                                    aim.dragging = true
+                                    aim.moveTo(mood.first, mood.second)
+                                    aimed = true
+                                    scheduleLensCommit()
+                                } else {
+                                    localPan = Offset(localPan.x - panChange.x / localZoom, localPan.y - panChange.y / localZoom)
+                                    pan = localPan
+                                }
+                                pressed.forEach { if (it.positionChanged()) it.consume() }
+                                moved = true
                             }
-                            pressed.forEach { if (it.positionChanged()) it.consume() }
-                            moved = true
-                        } else if (pressed.size == 1 && (panChange.x != 0f || panChange.y != 0f)) {
-                            travel += hypot(panChange.x.toDouble(), panChange.y.toDouble()).toFloat()
-                            if (travel < pinSlop) {
-                                continue
-                            }
-                            if (pinId == null && star != null) {
-                                pinId = star.id
-                            }
-                            val p = pressed[0].position
-                            val tip = nearest(snapshot.stars, p, size.width, size.height, 56f, localPan, localZoom)
-                            if (tip != null && pinId == null) {
-                                val sp = moodToPx(tip.valence, tip.energy, w, h, localPan, localZoom)
-                                hover = sp to "${tip.title} · ${tip.artist}"
-                                onHover(hover!!.second)
-                            }
-                            if (pinId != null) {
-                                lastPin = screenToMood(p, w, h, localPan, localZoom)
-                            } else if (nearLens || compact) {
-                                val mood = screenToMood(p, w, h, localPan, localZoom)
-                                onLens(mood.first, mood.second, snapshot.lensRadius)
-                            } else {
-                                localPan = Offset(localPan.x - panChange.x / localZoom, localPan.y - panChange.y / localZoom)
-                                pan = localPan
-                            }
-                            pressed.forEach { if (it.positionChanged()) it.consume() }
-                            moved = true
-                        }
-                    } while (event.changes.any { it.pressed })
+                        } while (event.changes.any { it.pressed })
+                    } finally {
+                        if (aimed) commitLens()
+                        aim.dragging = false
+                    }
                     if (pinId != null && moved) {
-                        onPin(pinId, lastPin.first, lastPin.second)
+                        latestOnPin.value(pinId, lastPin.first, lastPin.second)
                     }
                 }
             },
     ) {
+        StarFieldLayer(
+            stars = snapshot.stars,
+            currentId = snapshot.current?.id,
+            field = field,
+            pan = pan,
+            zoom = zoom,
+            hover = hover,
+            showSky = showSky,
+            compact = compact,
+            labelPaint = labelPaint,
+        )
+        LensChromeLayer(
+            aim = aim,
+            pan = pan,
+            zoom = zoom,
+            shadePath = shadePath,
+        )
+    }
+}
+
+@Composable
+private fun StarFieldLayer(
+    stars: List<TrackRow>,
+    currentId: Int?,
+    field: List<FieldStar>,
+    pan: Offset,
+    zoom: Float,
+    hover: Pair<Offset, String>?,
+    showSky: Boolean,
+    compact: Boolean,
+    labelPaint: AndroidPaint,
+) {
+    Canvas(Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
         if (showSky) {
@@ -165,9 +296,8 @@ fun MoodMap(
             drawGalaxy(field, MapLod.galaxyAlpha(zoom))
         }
         val glow = MapLod.glowScale(zoom)
-        val chrome = MapLod.chromeAlpha(zoom)
         val labelCandidates = ArrayList<Pair<Offset, TrackRow>>(32)
-        snapshot.stars.forEach { star ->
+        stars.forEach { star ->
             val p = moodToPx(star.valence, star.energy, w, h, pan, zoom)
             if (!MapLod.onScreen(p.x, p.y, w, h)) return@forEach
             val color = if (star.lowTrust || star.confidence < 0.45f) {
@@ -175,7 +305,7 @@ fun MoodMap(
             } else {
                 quadrantColor(star.quadrant)
             }
-            val selected = snapshot.current?.id == star.id
+            val selected = currentId == star.id
             val core = when (star.quadrant) {
                 "now" -> 3.4f
                 "deep" -> 3.1f
@@ -196,20 +326,33 @@ fun MoodMap(
             val cy = h / 2f
             labelCandidates.sortBy { hypot((it.first.x - cx).toDouble(), (it.first.y - cy).toDouble()) }
             labelCandidates.take(MapLod.MAX_LABELS).forEach { (p, star) ->
-                drawStarLabel(p, star.title)
+                drawStarLabel(p, star.title, labelPaint)
             }
         }
         hover?.let { (p, text) ->
-            if (!compact) drawStarLabel(Offset(p.x, p.y - 18f), text)
+            if (!compact) drawStarLabel(Offset(p.x, p.y - 18f), text, labelPaint)
         }
-        val lens = moodToPx(snapshot.lensX, snapshot.lensY, w, h, pan, zoom)
-        val rr = snapshot.lensRadius.coerceIn(0.12f, 0.48f) * min(w, h) * zoom
-        val shade = Path().apply {
-            fillType = PathFillType.EvenOdd
-            addRect(Rect(0f, 0f, w, h))
-            addOval(Rect(lens.x - rr, lens.y - rr, lens.x + rr, lens.y + rr))
-        }
-        drawPath(shade, Color(0x99060812).copy(alpha = 0.6f * chrome))
+    }
+}
+
+@Composable
+private fun LensChromeLayer(
+    aim: LensAim,
+    pan: Offset,
+    zoom: Float,
+    shadePath: Path,
+) {
+    Canvas(Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        val lens = moodToPx(aim.x, aim.y, w, h, pan, zoom)
+        val rr = aim.radius.coerceIn(0.12f, 0.48f) * min(w, h) * zoom
+        val chrome = MapLod.chromeAlpha(zoom)
+        shadePath.rewind()
+        shadePath.fillType = PathFillType.EvenOdd
+        shadePath.addRect(Rect(0f, 0f, w, h))
+        shadePath.addOval(Rect(lens.x - rr, lens.y - rr, lens.x + rr, lens.y + rr))
+        drawPath(shadePath, Color(0x99060812).copy(alpha = 0.6f * chrome))
         drawCircle(Color(0xFFB8F4FF).copy(alpha = 0.10f * chrome), rr * 1.08f, lens)
         drawCircle(
             Brush.radialGradient(
@@ -226,13 +369,7 @@ fun MoodMap(
     }
 }
 
-private fun DrawScope.drawStarLabel(p: Offset, title: String) {
-    val paint = AndroidPaint().apply {
-        color = android.graphics.Color.argb(210, 246, 240, 232)
-        textSize = 26f
-        isAntiAlias = true
-        isFakeBoldText = true
-    }
+private fun DrawScope.drawStarLabel(p: Offset, title: String, paint: AndroidPaint) {
     drawContext.canvas.nativeCanvas.drawText(title.take(22), p.x + 10f, p.y - 8f, paint)
 }
 
@@ -289,4 +426,8 @@ internal fun nearest(
         }
     }
     return best
+}
+
+internal fun shouldHitTestStars(aimingLens: Boolean, pinning: Boolean): Boolean {
+    return !aimingLens && !pinning
 }

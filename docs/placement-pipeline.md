@@ -29,7 +29,7 @@ From tags and folders, Meridian picks a starting spot — the “genre cloud.”
 
 ### 2. Compare to the short listen
 
-After analysis, it has a second opinion from the waveform.
+After analysis, it has a second opinion from the waveform (on long tracks: a mid-heavy blend of intro / mid / late 12s tastes — see [How Meridian listens](audio-analysis-pipeline.md)).
 
 It asks: *How far apart are the sticker guess and the listen?*  
 And: *Did the listen sound steady and trustworthy, or shaky?*
@@ -40,10 +40,10 @@ Depending on the file, Meridian uses different rules:
 
 **Well-tagged song with a real BPM**  
 Stay near the sticker. Only allow a **small** nudge from the listen.  
-If the listen is clear, steady, and *obviously* elsewhere, allow a **bigger** nudge — especially on Glow (brightness), a bit less on Kinetic (pace often matches genre/BPM already).
+If the listen is clear, steady, and *obviously* elsewhere, allow a **bigger** nudge on Glow (brightness). Kinetic stays a **fine-tune** when tags are good and the rhythm evidence is truly solid (not mid-shaky) — pace often matches genre/BPM already. Tag↔path genre conflict can open that Kinetic room further and must not claw it back.
 
-**Genre known, but BPM missing / weak**  
-Mix sticker and listen, but don’t let the listen yank the star too far from the genre neighborhood.
+**Genre known, but BPM missing / weak / conflicting / container-only**  
+Mix sticker and listen inside a slightly looser genre neighborhood. With steady onset evidence, Kinetic may pull harder from the waveform (aubio/PCM) than the soft-lock path allows.
 
 **Messy / empty tags (common on raw dumps)**  
 Trust the listen much more.
@@ -55,19 +55,25 @@ It does **not** mean “ignore everything and max out the waveform.”
 
 ### 4. Tiny tempo tweak
 
-BPM can give Kinetic a small push.  
+BPM can give Kinetic a small push — but only when the pulse sounds clear enough.  
 If the tag tempo and the heard tempo disagree, Meridian picks carefully (steady rhythm → heard tempo can win the nudge; otherwise the tag stays in charge).  
 On the “stay near the sticker” path, tempo still can’t kick the star outside that soft neighborhood.
+
+Title/artist mood words that clearly fight a **steady** listen are undone; **genre / folder seed stays**.
 
 ### 5. How sure are we?
 
 Meridian stores a confidence note (tag? path? listen? conflict?).  
-Low confidence means “take this with a grain of salt” in the UI — it doesn’t invent a third map axis.
+Low confidence means “take this with a grain of salt” in the UI — it doesn’t invent a third map axis.  
+Focus / NOW ranking gives a **light** lift to higher-confidence listens over dim scrapes at similar distance — not enough to bury a clearly closer neighbor.  
+Full multi-window listens **steer** the queue more; seed-only / intro-only listens stay out of NOW unless the neighborhood has nothing better (pins and loved tracks still qualify). Shape/timbre leftovers gently bias Dim / Charge / Focus — still the same two map axes.
 
 ### 6. Save (pins stay put)
 
 The star’s position is written to the library.  
 If you dragged and **pinned** a star, analyze will not overwrite that pin.
+
+**Rescan does not wipe a real listen:** clearing `analyzed` to re-queue decode still preserves valence/energy (and related PCM fields) when prior brightness/flux clues are still on the row. Stars stay where the last successful listen put them until a new decode replaces them.
 
 ### 7. Light tidy after a big analyze
 
@@ -76,6 +82,15 @@ Without listening again:
 - Soft pull toward album/artist neighbors (unpinned only)  
 - Unstick clones that stacked on the same spot  
 - Spread the sky a bit relative to *your* collection  
+
+Rough / partial listens (seed-only, intro-only, end-only) can get nudged toward album mates, but tidy keeps them in the **unsure** confidence band so they still look dim.  
+
+### Partial listens and “seed only”
+
+- Heard *some* audio but not a solid middle → star still placed, marked low-trust.  
+- Heard nothing but tags/folders help → rough `seed only` place (better than a missing star).  
+- Heard nothing *and* no tags → deferred for a later retry.  
+- A later failed listen does **not** overwrite a prior good waveform pin — and that “kept prior” case is marked analyzed so every launch doesn’t re-queue thousands of finished tracks (Rescan still retries on purpose).
 
 ## How listening feeds placement
 
