@@ -62,6 +62,7 @@ fun SettingsScreen(
     onRemoveFolder: (String) -> Unit,
     busy: Boolean,
     onIndexAll: () -> Unit = {},
+    onRecoverAudioAccess: () -> Unit = {},
     onOpen: (SettingsPage) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -144,6 +145,9 @@ fun SettingsScreen(
             TextButton(onClick = onAddFolder) {
                 Icon(Icons.Outlined.Add, contentDescription = null, tint = Orange, modifier = Modifier.size(18.dp))
                 Text("  Add folder", color = Orange)
+            }
+            TextButton(onClick = onRecoverAudioAccess) {
+                Text("Allow music access", color = Orange)
             }
             TextButton(onClick = onIndexAll, enabled = !busy) {
                 Text("Index all audio on this phone", color = Orange)

@@ -81,6 +81,7 @@ fun MainScreen(
     vm: SessionViewModel,
     ui: UiState,
     onLeaveApp: () -> Unit = {},
+    onRecoverAudioAccess: () -> Unit = {},
 ) {
     MainScreen(
         ui = ui,
@@ -105,6 +106,7 @@ fun MainScreen(
         onVolume = vm::setVolume,
         onIndexAll = vm::indexAllDeviceAudio,
         onLeaveApp = onLeaveApp,
+        onRecoverAudioAccess = onRecoverAudioAccess,
     )
 }
 
@@ -132,6 +134,7 @@ fun MainScreen(
     onVolume: (Float) -> Unit = {},
     onIndexAll: () -> Unit = {},
     onLeaveApp: () -> Unit = {},
+    onRecoverAudioAccess: () -> Unit = {},
     initialTab: AppTab = AppTab.Map,
     initialOverlay: Overlay = Overlay.None,
 ) {
@@ -198,6 +201,7 @@ fun MainScreen(
                 onAnalyze = onAnalyze,
                 onAddFolder = onAddFolder,
                 onIndexAll = onIndexAll,
+                onRecoverAudioAccess = onRecoverAudioAccess,
             )
         } else {
             Column(
@@ -237,6 +241,7 @@ fun MainScreen(
                             onRemoveFolder = onRemoveFolder,
                             busy = ui.busy,
                             onIndexAll = onIndexAll,
+                            onRecoverAudioAccess = onRecoverAudioAccess,
                             onOpen = { overlay = Overlay.Settings(it) },
                         )
                     }
@@ -442,6 +447,7 @@ private fun MapTab(
     onAnalyze: () -> Unit,
     onAddFolder: () -> Unit,
     onIndexAll: () -> Unit,
+    onRecoverAudioAccess: () -> Unit,
 ) {
     val snap = ui.snapshot
     val lensAim = remember { LensAim(snap.lensX, snap.lensY, snap.lensRadius) }
@@ -526,9 +532,9 @@ private fun MapTab(
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
+                            TextButton(onClick = onRecoverAudioAccess) { Text("Allow", color = Orange) }
                             TextButton(onClick = onIndexAll) { Text("Index", color = Orange) }
                             TextButton(onClick = onAddFolder) { Text("Folder", color = Orange) }
-                            TextButton(onClick = onScan) { Text("Scan", color = Orange) }
                             TextButton(onClick = onAnalyze) { Text("Listen", color = Orange) }
                         }
                     }

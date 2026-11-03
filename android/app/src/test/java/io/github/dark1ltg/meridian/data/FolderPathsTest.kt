@@ -48,4 +48,12 @@ class FolderPathsTest {
             FolderPaths.displayName("content://com.example.provider/tree/xyz"),
         )
     }
+
+    @Test
+    fun displayNamePhoneAudioMarker() {
+        assertEquals(
+            "Phone audio",
+            FolderPaths.displayName("content://media/external/audio/media"),
+        )
+    }
 }

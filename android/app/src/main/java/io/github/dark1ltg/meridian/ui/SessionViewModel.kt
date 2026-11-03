@@ -1,7 +1,6 @@
 package io.github.dark1ltg.meridian.ui
 
 import android.app.Application
-import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.dark1ltg.meridian.data.Engine
@@ -9,6 +8,7 @@ import io.github.dark1ltg.meridian.data.EngineSnapshot
 import io.github.dark1ltg.meridian.data.FolderPaths
 import io.github.dark1ltg.meridian.data.JobProgress
 import io.github.dark1ltg.meridian.data.MediaStoreMusic
+import io.github.dark1ltg.meridian.data.PathProbe
 import io.github.dark1ltg.meridian.data.SafIngest
 import io.github.dark1ltg.meridian.data.TreeGrants
 import io.github.dark1ltg.meridian.data.emptySnapshot
@@ -89,15 +89,27 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         bootMutex.withLock {
             if (booted) return
             val data = File(getApplication<Application>().filesDir, "meridian").absolutePath
-            val music = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath
+            // ensure() reuses a live session (PlaybackService may already hold it)
+            // and never auto-registers an empty Music folder before Allow.
             val snap = withContext(Dispatchers.IO) {
-                engine.call(
-                    "initialize",
-                    JSONObject().put("data_dir", data).put("default_music", music),
-                )
+                engine.call("ensure", JSONObject().put("data_dir", data))
             }
             applySnap(snap)
             booted = snap.ok
+        }
+    }
+
+    /** Stop any in-flight Scan/Listen so the next action can take the engine lock. */
+    private fun stopWork(message: String? = null) {
+        work?.cancel()
+        work = null
+        viewModelScope.launch(Dispatchers.IO) { runCatching { engine.abort() } }
+        _state.update {
+            it.copy(
+                busy = false,
+                job = JobProgress(),
+                message = message ?: it.message,
+            )
         }
     }
 
@@ -134,7 +146,18 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
             "play",
             JSONObject().put("id", id).put("position_ms", _state.value.positionMs),
         ) { snap ->
-            snap.current?.let { player.play(it) }
+            val track = snap.current ?: return@call
+            val reachable = PathProbe(getApplication()).reachable(track.path)
+            if (!reachable) {
+                _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
+                call("playback_failed", JSONObject().put("id", track.id)) { next ->
+                    next.current?.takeIf { PathProbe(getApplication()).reachable(it.path) }?.let {
+                        player.play(it)
+                    }
+                }
+                return@call
+            }
+            player.play(track)
         }
     }
 
@@ -211,7 +234,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     fun rescan() = heavy("rescan") { JSONObject() }
 
     private fun scanThenListen() {
-        work?.cancel()
+        stopWork("Scanning…")
         work = viewModelScope.launch {
             ensureBoot()
             _state.update { it.copy(busy = true, message = "Scanning…") }
@@ -229,7 +252,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun cancelJob() {
-        viewModelScope.launch(Dispatchers.IO) { engine.abort() }
+        stopWork("Stopped.")
     }
 
     fun addFolder(path: String) {
@@ -253,7 +276,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         treeUri: String?,
         includeMediaStore: Boolean = false,
     ) {
-        work?.cancel()
+        stopWork("Looking for music…")
         work = viewModelScope.launch {
             ensureBoot()
             _state.update { it.copy(busy = true, message = "Looking for music…") }
@@ -268,7 +291,20 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                         if (dir.isDirectory) found += dir.absolutePath
                     }
                     if (includeMediaStore) {
-                        found += MediaStoreMusic.directories(app)
+                        // Prefer MediaStore rows directly — scoped storage often
+                        // cannot os.walk Music even after READ_MEDIA_AUDIO.
+                        MediaStoreMusic.tracks(app).forEach { track ->
+                            if (track.playPath.startsWith("content:")) {
+                                uriTracks += JSONObject()
+                                    .put("path", track.playPath)
+                                    .put("title", track.title)
+                            } else {
+                                File(track.playPath).parentFile?.absolutePath?.let { found += it }
+                            }
+                        }
+                        if (uriTracks.isNotEmpty()) {
+                            found += "content://media/external/audio/media"
+                        }
                     }
                     if (!treeUri.isNullOrBlank()) {
                         val ingested = SafIngest.ingest(app, android.net.Uri.parse(treeUri))
@@ -284,12 +320,12 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         keys.forEach { key -> TreeGrants.remember(app, key, treeUri) }
                     }
-                    found.distinct()
+                    MediaStoreMusic.dropNested(found.distinct())
                 }
                 if (folders.isEmpty() && uriTracks.isEmpty()) {
                     _state.update {
                         it.copy(
-                            message = "No playable folders there. Try Music, an SD card, or Index all audio.",
+                            message = "No playable music found. Allow access, Add folder, or Index all audio.",
                         )
                     }
                     return@launch
@@ -333,7 +369,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun removeFolder(path: String) {
-        work?.cancel()
+        stopWork("Removing folder…")
         work = viewModelScope.launch {
             ensureBoot()
             _state.update { it.copy(busy = true, message = "Removing folder…") }
@@ -352,8 +388,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun pickFolder() {
         // Folder picker must work even if a prior scan left busy stuck or mid-job.
-        work?.cancel()
-        _state.update { it.copy(busy = false, job = JobProgress(), message = "Choose a folder…") }
+        stopWork("Choose a folder…")
         val launch = onPickFolder
         if (launch == null) {
             _state.update { it.copy(message = "Folder picker isn’t ready yet — try again.") }
@@ -388,7 +423,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun heavy(method: String, payload: () -> JSONObject) {
-        work?.cancel()
+        stopWork("Working…")
         work = viewModelScope.launch {
             ensureBoot()
             _state.update { it.copy(busy = true, message = "Working…") }

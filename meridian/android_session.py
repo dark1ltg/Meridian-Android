@@ -53,6 +53,25 @@ def _path_playable(path: str) -> bool:
     return Path(raw).exists()
 
 
+def _dir_has_audio(folder: str) -> bool:
+    """True if a shallow/os.walk finds at least one audio file (permission-gated)."""
+    from meridian.features import AUDIO_EXTS
+
+    root = Path(folder)
+    try:
+        for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+            dirnames[:] = [n for n in dirnames if not n.startswith(".") and not (Path(dirpath) / n).is_symlink()]
+            for name in filenames:
+                if Path(name).suffix.lower() in AUDIO_EXTS:
+                    return True
+            # Cap the probe so first boot stays snappy on huge trees.
+            if dirpath != str(root) and len(Path(dirpath).relative_to(root).parts) > 2:
+                dirnames.clear()
+    except OSError:
+        return False
+    return False
+
+
 def _clip01(value: float) -> float:
     return max(0.0, min(1.0, float(value)))
 
@@ -144,10 +163,25 @@ class AndroidSession:
         self.library = Library(root / "library.sqlite")
         self._load_ui_state()
         music = (default_music or "").strip()
-        if music and Path(music).is_dir() and not self.library.folders():
+        # Only auto-watch Music when it actually contains audio we can list —
+        # otherwise Android shows an empty "Music" row before the user grants
+        # access and Scan looks broken.
+        if (
+            music
+            and Path(music).is_dir()
+            and not self.library.folders()
+            and _dir_has_audio(music)
+        ):
             self.library.add_folder(music)
             self.status = f"Watching {music}"
         return self.snapshot()
+
+    def ensure(self, data_dir: str) -> dict:
+        """Open the session if needed without wiping an already-live library."""
+        root = Path(data_dir)
+        if self.library is not None and self._data_dir == root:
+            return self.snapshot()
+        return self.initialize(str(root), "")
 
     def close(self) -> None:
         if self.library:

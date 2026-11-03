@@ -14,6 +14,7 @@ _NO_LOCK = {"progress", "request_abort"}
 
 _METHODS = {
     "initialize": lambda p: _SESSION.initialize(p["data_dir"], p.get("default_music") or ""),
+    "ensure": lambda p: _SESSION.ensure(p["data_dir"]),
     "snapshot": lambda _p: _SESSION.snapshot(),
     "set_lens": lambda p: _SESSION.set_lens(p["x"], p["y"], p.get("radius")),
     "set_mode": lambda p: _SESSION.set_mode(p["mode"]),

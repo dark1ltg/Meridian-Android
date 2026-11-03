@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
-import android.os.Environment
 import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -134,14 +133,12 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun bootEngine() {
+        // Same Chaquopy AndroidSession as the UI. Never call initialize() here —
+        // that closes the live library and made Play look broken after Scan/Listen.
         io.execute {
             val data = File(filesDir, "meridian").absolutePath
-            val music = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath
             runCatching {
-                engine.call(
-                    "initialize",
-                    JSONObject().put("data_dir", data).put("default_music", music),
-                )
+                engine.call("ensure", JSONObject().put("data_dir", data))
             }
         }
     }
