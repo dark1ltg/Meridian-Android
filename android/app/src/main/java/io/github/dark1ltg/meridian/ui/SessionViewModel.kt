@@ -70,11 +70,19 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         _state.update { it.copy(playing = isPlaying) }
                     }
-                    // Skip/finish already return a snapshot via PlaybackService —
-                    // do not pull another full classify on every media transition.
+
+                    override fun onMediaItemTransition(
+                        mediaItem: androidx.media3.common.MediaItem?,
+                        reason: Int,
+                    ) {
+                        // PlaybackService already advanced the Python queue; only sync the
+                        // UI shell from the cached row (no full classify per transition).
+                        syncNowPlayingFromMedia(mediaItem)
+                    }
                 },
             )
             _state.update { it.copy(playing = p.isPlaying, volume = p.volume) }
+            syncNowPlayingFromMedia(p.currentMediaItem)
         }
         viewModelScope.launch {
             var lastPos = -1L
@@ -224,6 +232,25 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
             ?: snap.shelf.find { it.id == id }
             ?: snap.stars.find { it.id == id }
             ?: snap.search.find { it.id == id }
+    }
+
+    /** Keep Now Playing title/art/queue highlight in sync when DualDeck advances. */
+    private fun syncNowPlayingFromMedia(mediaItem: androidx.media3.common.MediaItem?) {
+        val id = mediaItem?.mediaId?.toIntOrNull() ?: return
+        val snap = _state.value.snapshot
+        if (snap.current?.id == id) return
+        val row = findTrack(id)
+        if (row != null) {
+            _state.update { it.copy(snapshot = it.snapshot.withPlayingTrack(row)) }
+            val p = player.player
+            _clock.value = PlaybackClock(
+                positionMs = p?.currentPosition?.coerceAtLeast(0L) ?: 0L,
+                durationMs = p?.duration?.takeIf { it > 0 } ?: row.durationMs,
+            )
+        } else {
+            // Rare: track not in the last UI shell — pull engine state once.
+            call("snapshot")
+        }
     }
 
     fun skip() {
