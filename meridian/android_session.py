@@ -279,14 +279,47 @@ class AndroidSession:
 
     def _add_folder_path(self, path: str) -> None:
         lib = self._require()
-        folder = str(Path(path))
+        raw = str(path or "").strip()
+        if not raw:
+            raise FileNotFoundError("empty folder path")
+        # SAF tree URIs are registered as folder markers when Android cannot
+        # expose a listable filesystem path. scan_library skips non-dirs;
+        # tracks arrive via add_uri_tracks.
+        if raw.startswith("content:"):
+            lib.add_folder(raw)
+            self.status = "Added shared folder"
+            return
+        folder = str(Path(raw))
         if not Path(folder).is_dir():
             raise FileNotFoundError(f"not a folder: {folder}")
         lib.add_folder(folder)
         self.status = f"Added {folder}"
 
     def remove_folder(self, path: str) -> dict:
-        self._require().remove_folder(path)
+        lib = self._require()
+        raw = str(path or "").strip()
+        lib.remove_folder(raw)
+        # Drop tracks that lived under this folder (filesystem prefix or the
+        # exact content: tree / document URIs from the same grant).
+        dead: list[str] = []
+        if raw.startswith("content:"):
+            tree = raw.rstrip("/")
+            for track in lib.all_tracks():
+                p = str(track.path or "")
+                if p == tree or p.startswith(tree + "/") or p.startswith(tree + "%"):
+                    dead.append(p)
+                elif "tree/" in tree and p.startswith("content:") and tree.split("/tree/")[-1] in p:
+                    dead.append(p)
+        else:
+            root = raw.rstrip("/")
+            prefix = root + "/"
+            for track in lib.all_tracks():
+                p = str(track.path or "")
+                if p == root or p.startswith(prefix):
+                    dead.append(p)
+        if dead:
+            lib.delete_paths(dead)
+            self._rebuild_queue(keep_current=True)
         self.status = "Folder removed"
         return self.snapshot()
 

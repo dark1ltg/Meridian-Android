@@ -10,6 +10,7 @@ import io.github.dark1ltg.meridian.data.FolderPaths
 import io.github.dark1ltg.meridian.data.JobProgress
 import io.github.dark1ltg.meridian.data.MediaStoreMusic
 import io.github.dark1ltg.meridian.data.SafIngest
+import io.github.dark1ltg.meridian.data.TreeGrants
 import io.github.dark1ltg.meridian.data.emptySnapshot
 import io.github.dark1ltg.meridian.playback.LocalPlayer
 import kotlinx.coroutines.Dispatchers
@@ -237,67 +238,113 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         work = viewModelScope.launch {
             ensureBoot()
             _state.update { it.copy(busy = true, message = "Looking for music…") }
-            val app = getApplication<Application>()
-            val uriTracks = mutableListOf<org.json.JSONObject>()
-            val folders = withContext(Dispatchers.IO) {
-                val found = mutableListOf<String>()
-                extraPaths.forEach { raw ->
-                    val resolved = FolderPaths.fromTreeUri(raw) ?: raw
-                    val dir = File(resolved)
-                    if (dir.isDirectory) found += dir.absolutePath
-                }
-                if (includeMediaStore) {
-                    found += MediaStoreMusic.directories(app)
-                }
-                if (!treeUri.isNullOrBlank()) {
-                    val ingested = SafIngest.ingest(app, android.net.Uri.parse(treeUri))
-                    found += ingested.folders
-                    ingested.uriTracks.forEach { track ->
-                        uriTracks += JSONObject().put("path", track.uri).put("title", track.title)
+            try {
+                val app = getApplication<Application>()
+                val uriTracks = mutableListOf<org.json.JSONObject>()
+                val folders = withContext(Dispatchers.IO) {
+                    val found = mutableListOf<String>()
+                    extraPaths.forEach { raw ->
+                        val resolved = FolderPaths.fromTreeUri(raw) ?: raw
+                        val dir = File(resolved)
+                        if (dir.isDirectory) found += dir.absolutePath
                     }
+                    if (includeMediaStore) {
+                        found += MediaStoreMusic.directories(app)
+                    }
+                    if (!treeUri.isNullOrBlank()) {
+                        val ingested = SafIngest.ingest(app, android.net.Uri.parse(treeUri))
+                        found += ingested.folders
+                        ingested.uriTracks.forEach { track ->
+                            uriTracks += JSONObject().put("path", track.uri).put("title", track.title)
+                        }
+                        // Persist grant ↔ folder key so Remove can drop access.
+                        val keys = if (ingested.folders.isNotEmpty()) {
+                            ingested.folders
+                        } else {
+                            listOf(TreeGrants.folderKeyForTree(treeUri))
+                        }
+                        keys.forEach { key -> TreeGrants.remember(app, key, treeUri) }
+                    }
+                    found.distinct()
                 }
-                found.distinct()
-            }
-            if (folders.isEmpty() && uriTracks.isEmpty()) {
-                _state.update {
-                    it.copy(
-                        busy = false,
-                        message = "No playable folders there. Try Music, an SD card, or Index all audio.",
-                    )
-                }
-                return@launch
-            }
-            if (folders.isNotEmpty()) {
-                val snap = withContext(Dispatchers.IO) {
-                    engine.call("add_folders", JSONObject().put("paths", org.json.JSONArray(folders)))
-                }
-                applySnap(snap)
-                if (!snap.ok) {
-                    _state.update { it.copy(busy = false, job = JobProgress()) }
+                if (folders.isEmpty() && uriTracks.isEmpty()) {
+                    _state.update {
+                        it.copy(
+                            message = "No playable folders there. Try Music, an SD card, or Index all audio.",
+                        )
+                    }
                     return@launch
                 }
-                _state.update { it.copy(busy = true, message = "Scanning…") }
-                val scanned = withContext(Dispatchers.IO) { engine.call("scan", JSONObject()) }
-                applySnap(scanned)
-            }
-            if (uriTracks.isNotEmpty()) {
-                _state.update { it.copy(busy = true, message = "Indexing shared storage…") }
-                val uris = withContext(Dispatchers.IO) {
-                    engine.call(
-                        "add_uri_tracks",
-                        JSONObject().put("tracks", org.json.JSONArray(uriTracks)),
-                    )
+                if (folders.isNotEmpty()) {
+                    val snap = withContext(Dispatchers.IO) {
+                        engine.call("add_folders", JSONObject().put("paths", org.json.JSONArray(folders)))
+                    }
+                    applySnap(snap)
+                    if (!snap.ok) return@launch
+                    // Filesystem folders: scan. content:// folder keys are markers only —
+                    // their audio arrives via add_uri_tracks.
+                    val walkable = folders.filter { !it.startsWith("content:") }
+                    if (walkable.isNotEmpty()) {
+                        _state.update { it.copy(message = "Scanning…") }
+                        val scanned = withContext(Dispatchers.IO) { engine.call("scan", JSONObject()) }
+                        applySnap(scanned)
+                    }
                 }
-                applySnap(uris)
+                if (uriTracks.isNotEmpty()) {
+                    _state.update { it.copy(message = "Indexing shared storage…") }
+                    val uris = withContext(Dispatchers.IO) {
+                        engine.call(
+                            "add_uri_tracks",
+                            JSONObject().put("tracks", org.json.JSONArray(uriTracks)),
+                        )
+                    }
+                    applySnap(uris)
+                }
+            } finally {
+                _state.update { it.copy(busy = false, job = JobProgress()) }
             }
-            _state.update { it.copy(busy = false, job = JobProgress()) }
         }
     }
 
-    fun removeFolder(path: String) = call("remove_folder", JSONObject().put("path", path))
+    fun removeFolder(path: String) {
+        work?.cancel()
+        work = viewModelScope.launch {
+            ensureBoot()
+            _state.update { it.copy(busy = true, message = "Removing folder…") }
+            try {
+                val app = getApplication<Application>()
+                withContext(Dispatchers.IO) { TreeGrants.release(app, path) }
+                val snap = withContext(Dispatchers.IO) {
+                    engine.call("remove_folder", JSONObject().put("path", path))
+                }
+                applySnap(snap)
+            } finally {
+                _state.update { it.copy(busy = false, job = JobProgress()) }
+            }
+        }
+    }
 
     fun pickFolder() {
-        onPickFolder?.invoke()
+        // Folder picker must work even if a prior scan left busy stuck or mid-job.
+        work?.cancel()
+        _state.update { it.copy(busy = false, job = JobProgress(), message = "Choose a folder…") }
+        val launch = onPickFolder
+        if (launch == null) {
+            _state.update { it.copy(message = "Folder picker isn’t ready yet — try again.") }
+            return
+        }
+        launch.invoke()
+    }
+
+    fun clearFolderPickMessage() {
+        _state.update {
+            it.copy(
+                message = when {
+                    it.snapshot.trackCount == 0 -> "Add Music, then Scan. Files stay on this phone."
+                    else -> it.message
+                },
+            )
+        }
     }
 
     fun toggleSearch(open: Boolean) {
@@ -331,12 +378,15 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
             }
-            val snap = withContext(Dispatchers.IO) {
-                engine.call(method, payload())
+            try {
+                val snap = withContext(Dispatchers.IO) {
+                    engine.call(method, payload())
+                }
+                applySnap(snap)
+            } finally {
+                poll.cancel()
+                _state.update { it.copy(busy = false, job = JobProgress()) }
             }
-            poll.cancel()
-            applySnap(snap)
-            _state.update { it.copy(busy = false, job = JobProgress()) }
         }
     }
 

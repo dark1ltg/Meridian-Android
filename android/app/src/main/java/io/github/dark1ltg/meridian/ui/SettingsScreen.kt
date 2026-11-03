@@ -134,12 +134,14 @@ fun SettingsScreen(
                             "Remove",
                             color = Orange,
                             fontSize = 12.sp,
-                            modifier = Modifier.clickable(enabled = !busy) { onRemoveFolder(path) },
+                            // Always allow Remove — ViewModel cancels any busy job first.
+                            modifier = Modifier.clickable { onRemoveFolder(path) },
                         )
                     }
                 }
             }
-            TextButton(onClick = onAddFolder, enabled = !busy) {
+            // Always allow Add folder so a stuck scan cannot freeze the picker.
+            TextButton(onClick = onAddFolder) {
                 Icon(Icons.Outlined.Add, contentDescription = null, tint = Orange, modifier = Modifier.size(18.dp))
                 Text("  Add folder", color = Orange)
             }

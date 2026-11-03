@@ -286,3 +286,22 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
     finally:
         set_path_probe(None)
         session.close()
+
+
+def test_content_tree_folder_add_and_remove(tmp_path: Path) -> None:
+    tree = "content://com.android.externalstorage.documents/tree/primary%3APodcasts"
+    track = f"{tree}/document/primary%3APodcasts%2Fglow.mp3"
+    set_path_probe(_Probe({track}))
+    session = AndroidSession()
+    try:
+        session.initialize(str(tmp_path / "data"), "")
+        snap = session.add_folders([tree])
+        assert tree in snap["folders"]
+        session.add_uri_tracks([{"path": track, "title": "Glow.mp3"}])
+        assert session.library.get(session.library.all_tracks()[0].id) is not None
+        snap = session.remove_folder(tree)
+        assert tree not in snap["folders"]
+        assert snap["track_count"] == 0
+    finally:
+        set_path_probe(None)
+        session.close()

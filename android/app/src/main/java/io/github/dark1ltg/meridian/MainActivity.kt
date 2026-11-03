@@ -26,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import io.github.dark1ltg.meridian.data.FolderPaths
 import io.github.dark1ltg.meridian.playback.DeviceUnlock
 import io.github.dark1ltg.meridian.ui.MainScreen
 import io.github.dark1ltg.meridian.ui.OnboardingScreen
@@ -57,7 +56,13 @@ class MainActivity : ComponentActivity() {
     private val pickTree = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree(),
     ) { uri: Uri? ->
-        if (uri == null) return@registerForActivityResult
+        if (uri == null) {
+            vm.clearFolderPickMessage()
+            return@registerForActivityResult
+        }
+        // Always keep the SAF grant and ingest through DocumentFile. A bare
+        // filesystem path often looks like a directory but cannot be listed
+        // under scoped storage — which made Add look like a no-op.
         try {
             contentResolver.takePersistableUriPermission(
                 uri,
@@ -65,22 +70,23 @@ class MainActivity : ComponentActivity() {
             )
         } catch (_: SecurityException) {
         }
-        val path = FolderPaths.fromTreeUri(uri.toString())
-        val asFile = path?.let { java.io.File(it) }
-        if (asFile != null && asFile.isDirectory) {
-            vm.addFolder(asFile.absolutePath)
-        } else {
-            vm.ingestTree(uri.toString())
-        }
+        vm.ingestTree(uri.toString())
     }
 
     private val ask = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { result ->
-        val ok = result.values.any { it } || hasAudioPermission()
+        val prefs = getSharedPreferences("meridian", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("permission_prompt_done", true).apply()
+        if (result.containsKey(Manifest.permission.POST_NOTIFICATIONS)) {
+            prefs.edit().putBoolean("notify_prompt_done", true).apply()
+        }
+        val ok = hasAudioPermission() || result[audioPermission()] == true
         if (ok) {
             vm.boot()
             applyFolders(pendingFolders)
+        } else {
+            vm.boot()
         }
         pendingFolders = null
         gate = Gate.App
@@ -101,7 +107,7 @@ class MainActivity : ComponentActivity() {
         val prefs = getSharedPreferences("meridian", Context.MODE_PRIVATE)
         vm.onPickFolder = { pickTree.launch(null) }
         if (hasAudioPermission()) vm.boot()
-        requestNotificationPermission()
+        maybeRequestNotificationPermission()
         ContextCompat.registerReceiver(
             this,
             unlockReceiver,
@@ -135,18 +141,22 @@ class MainActivity : ComponentActivity() {
                                 gate = if (hasAudioPermission()) Gate.App else Gate.Permission
                             },
                         )
-                        Gate.Permission ->                         PermissionScreen(
+                        Gate.Permission -> PermissionScreen(
                             onContinue = { music, downloads, other, allAudio ->
                                 pendingFolders = FolderChoice(music, downloads, other, allAudio)
+                                prefs.edit().putBoolean("permission_prompt_done", true).apply()
                                 if (hasAudioPermission()) {
                                     vm.boot()
                                     applyFolders(pendingFolders)
+                                    pendingFolders = null
                                     gate = Gate.App
+                                    maybeRequestNotificationPermission()
                                 } else {
                                     ask.launch(neededPermissions())
                                 }
                             },
                             onNotNow = {
+                                prefs.edit().putBoolean("permission_prompt_done", true).apply()
                                 vm.boot()
                                 gate = Gate.App
                             },
@@ -258,9 +268,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun advanceFromSplash(prefs: android.content.SharedPreferences) {
+        // Once the user has answered the music-access screen (Continue or Not
+        // now), do not re-show it every cold start — even if they denied the
+        // system dialog. They can still grant access from system Settings and
+        // add folders via SAF.
         gate = when {
             !prefs.getBoolean("onboarded", false) -> Gate.Onboarding
-            !hasAudioPermission() -> Gate.Permission
+            !hasAudioPermission() && !prefs.getBoolean("permission_prompt_done", false) -> Gate.Permission
             else -> Gate.App
         }
     }
@@ -280,36 +294,46 @@ class MainActivity : ComponentActivity() {
         vm.importSources(paths, choice.allAudio)
     }
 
-    private fun hasAudioPermission(): Boolean {
-        val perm = if (Build.VERSION.SDK_INT >= 33) {
+    private fun audioPermission(): String =
+        if (Build.VERSION.SDK_INT >= 33) {
             Manifest.permission.READ_MEDIA_AUDIO
         } else {
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
-        return ContextCompat.checkSelfPermission(this, perm) == android.content.pm.PackageManager.PERMISSION_GRANTED
-    }
+
+    private fun hasAudioPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, audioPermission()) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
 
     private val notifyPerm = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { }
+    ) {
+        getSharedPreferences("meridian", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("notify_prompt_done", true)
+            .apply()
+    }
 
-    private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+    /** Ask for notifications at most once unless already granted. */
+    private fun maybeRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
             android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
-            notifyPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
         }
+        val prefs = getSharedPreferences("meridian", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("notify_prompt_done", false)) return
+        notifyPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun neededPermissions(): Array<String> {
         val list = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= 33) {
-            list += Manifest.permission.READ_MEDIA_AUDIO
-            list += Manifest.permission.POST_NOTIFICATIONS
-        } else {
-            list += Manifest.permission.READ_EXTERNAL_STORAGE
+        if (!hasAudioPermission()) {
+            list += audioPermission()
         }
+        // Notifications stay optional and are prompted separately once — bundling
+        // them with music access made "Allow all the time" feel ignored.
         return list.toTypedArray()
     }
 }
