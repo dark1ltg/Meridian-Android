@@ -362,7 +362,7 @@ class AndroidSession:
 
     def scan(self, force: bool = False) -> dict:
         lib = self._require()
-        self._begin_job("scan", "Scanning folders…")
+        self._begin_job("scan", "Looking through folders…")
         try:
             added = scan_library(
                 lib,
@@ -422,14 +422,23 @@ class AndroidSession:
             self._end_job()
         return self.snapshot()
 
-    def _on_scan_progress(self, name: str) -> None:
-        self._job_current += 1
-        self._job_message = name
+    def _on_scan_progress(self, name: str, index: int = 0, total: int = 0) -> None:
+        self._job_current = int(index)
+        self._job_total = int(total)
+        if total > 0 and index > 0:
+            self._job_message = f"{name} — {index} of {total}"
+        elif name:
+            self._job_message = name
+        else:
+            self._job_message = "Scanning…"
 
     def _on_listen_progress(self, title: str, index: int, total: int) -> None:
         self._job_current = index
         self._job_total = total
-        self._job_message = title
+        if total > 0 and index > 0:
+            self._job_message = f"{title} — {index} of {total}"
+        else:
+            self._job_message = title
 
     def pin(self, track_id: int, valence: float, energy: float) -> dict:
         self._require().set_mood(int(track_id), _clip01(valence), _clip01(energy), pinned=True)

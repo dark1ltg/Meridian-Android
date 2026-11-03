@@ -486,7 +486,10 @@ class MainWindow(QMainWindow):
         # would run on the worker thread (unsafe for widgets / QThread.wait).
         queued = Qt.ConnectionType.QueuedConnection
         self._scan_worker.progress.connect(
-            lambda n: self._set_status(f"Found {n}"), queued
+            lambda name, i, n: self._set_status(
+                f"Scanning {i} of {n}: {name}" if n else f"Scanning: {name}"
+            ),
+            queued,
         )
         self._scan_worker.failed.connect(
             lambda m: QMessageBox.warning(self, "Scan failed", m), queued

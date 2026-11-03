@@ -286,7 +286,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                     val walkable = folders.filter { !it.startsWith("content:") }
                     if (walkable.isNotEmpty()) {
                         _state.update { it.copy(message = "Scanning…") }
-                        val scanned = withContext(Dispatchers.IO) { engine.call("scan", JSONObject()) }
+                        val scanned = runEngineJob("scan", JSONObject())
                         applySnap(scanned)
                     }
                 }
@@ -366,27 +366,33 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         work = viewModelScope.launch {
             ensureBoot()
             _state.update { it.copy(busy = true, message = "Working…") }
-            val poll = launch {
-                while (isActive) {
-                    delay(220)
-                    val job = withContext(Dispatchers.IO) { engine.progress() }
-                    _state.update {
-                        it.copy(
-                            job = job,
-                            message = job.message.ifBlank { it.message },
-                        )
-                    }
-                }
-            }
             try {
-                val snap = withContext(Dispatchers.IO) {
-                    engine.call(method, payload())
-                }
+                val snap = runEngineJob(method, payload())
                 applySnap(snap)
             } finally {
-                poll.cancel()
                 _state.update { it.copy(busy = false, job = JobProgress()) }
             }
+        }
+    }
+
+    /** Run an engine job while polling live filename / N-of-total progress. */
+    private suspend fun runEngineJob(method: String, payload: JSONObject): EngineSnapshot {
+        val poll = viewModelScope.launch {
+            while (isActive) {
+                delay(180)
+                val job = withContext(Dispatchers.IO) { engine.progress() }
+                _state.update {
+                    it.copy(
+                        job = job,
+                        message = job.message.ifBlank { it.message },
+                    )
+                }
+            }
+        }
+        return try {
+            withContext(Dispatchers.IO) { engine.call(method, payload) }
+        } finally {
+            poll.cancel()
         }
     }
 
