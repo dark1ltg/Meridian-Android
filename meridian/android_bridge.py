@@ -18,6 +18,7 @@ _METHODS = {
     "snapshot": lambda _p: _SESSION.snapshot(),
     "set_lens": lambda p: _SESSION.set_lens(p["x"], p["y"], p.get("radius")),
     "set_mode": lambda p: _SESSION.set_mode(p["mode"]),
+    "renew_queue": lambda _p: _SESSION.renew_queue(),
     "add_folder": lambda p: _SESSION.add_folder(p["path"]),
     "add_folders": lambda p: _SESSION.add_folders(p.get("paths") or []),
     "add_uri_tracks": lambda p: _SESSION.add_uri_tracks(p.get("tracks") or []),

@@ -3,7 +3,6 @@ package io.github.dark1ltg.meridian.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,19 +43,34 @@ fun QueueScreen(
     onPlay: (Int) -> Unit,
     onLove: (Int) -> Unit,
     onOpenWhy: (Int) -> Unit,
+    onRenewQueue: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        Text(
-            "Queue",
-            color = Cream,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
-        )
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Queue",
+                    color = Cream,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    "From lens · clock · matrix",
+                    color = Mute,
+                    fontSize = 12.sp,
+                )
+            }
+            RenewQueueButton(onRenewQueue = onRenewQueue)
+        }
         if (tracks.isEmpty()) {
             Text(
-                "Queue is empty.",
+                "Queue is empty. Aim the lens, then Renew or Play Context.",
                 color = Mute,
                 modifier = Modifier.padding(top = 24.dp),
             )
