@@ -22,8 +22,9 @@ from meridian.features import (
 from meridian.library import Library
 
 AbortFn = Callable[[], bool]
-ProgressFn = Callable[[str], None]
-AnalyzeProgressFn = Callable[[str, int, int], None]
+# name / title, 1-based index, total count
+ProgressFn = Callable[[str, int, int], None]
+AnalyzeProgressFn = ProgressFn
 
 
 def _resolve(path: Path) -> Path | None:
@@ -52,8 +53,10 @@ def scan_library(
     folders = library.folders()
     found: list[str] = []
     prune_roots: list[Path] = []
-    added = 0
-    now = time.time()
+    # Discover every audio path first so progress can show "12 of 9900".
+    discovered: list[tuple[str, Path]] = []
+    if progress:
+        progress("Looking through folders…", 0, 0)
     for folder in folders:
         if should_stop():
             break
@@ -76,7 +79,7 @@ def scan_library(
             followlinks=False,
         ):
             if should_stop():
-                return added
+                break
             keep_dirs: list[str] = []
             for name in dirnames:
                 if name.startswith("."):
@@ -96,67 +99,82 @@ def scan_library(
                         continue
                 path_str = str(path)
                 root_found.append(path_str)
-                try:
-                    st = os.stat(path_str)
-                except OSError:
-                    continue
-                mtime = library.existing_mtime(path_str)
-                if not force and mtime is not None and abs(mtime - st.st_mtime) < 0.5:
-                    continue
-                if progress:
-                    progress(name)
-                tags = read_tags(path_str)
-                seed = genre_seed(
-                    tags["genre"],
-                    tags["title"],
-                    tags["artist"],
-                    path=path_str,
-                    year=tags.get("year"),
-                    extra_text=tags.get("extra_text") or "",
-                    albumartist=tags.get("albumartist") or "",
-                    composer=tags.get("composer") or "",
-                    replaygain_db=tags.get("replaygain_db"),
-                )
-                bpm = tags.get("bpm")
-                conf, note = mood_confidence(
-                    tag_key=seed.tag_key,
-                    path_key=seed.path_key,
-                    pcm_ok=False,
-                    bpm_ok=bpm is not None,
-                    replaygain=tags.get("replaygain_db") is not None,
-                    keyword_hit=seed.keyword_hit,
-                    weak_tags=path.suffix.lower() in {".wav", ".aiff", ".aif"},
-                )
-                library.upsert_track(
-                    {
-                        "path": path_str,
-                        "title": tags["title"],
-                        "artist": tags["artist"],
-                        "album": tags["album"],
-                        "albumartist": tags.get("albumartist") or "",
-                        "genre": tags["genre"],
-                        "duration_ms": tags["duration_ms"],
-                        "year": tags["year"],
-                        "bpm": tags["bpm"],
-                        "valence": seed.valence,
-                        "energy": seed.energy,
-                        "mood_confidence": conf,
-                        "confidence_note": note or "pre-analyze",
-                        "low_trust": int(confidence_low_trust(conf)),
-                        "added_at": now,
-                        "mtime": st.st_mtime,
-                        "analyzed": 0,
-                    }
-                )
-                added += 1
+                discovered.append((path_str, path))
         found.extend(root_found)
         if walk_ok and not should_stop() and root_found:
             known = library.count_tracks_under(root_resolved)
             if known == 0 or len(root_found) * 2 >= known:
                 prune_roots.append(root_resolved)
+
+    if should_stop():
+        return 0
+
+    total = len(discovered)
+    added = 0
+    now = time.time()
+    if progress and total == 0:
+        progress("No audio files found", 0, 0)
+    for index, (path_str, path) in enumerate(discovered, start=1):
+        if should_stop():
+            break
+        name = path.name
+        if progress:
+            progress(name, index, total)
+        try:
+            st = os.stat(path_str)
+        except OSError:
+            continue
+        mtime = library.existing_mtime(path_str)
+        if not force and mtime is not None and abs(mtime - st.st_mtime) < 0.5:
+            continue
+        tags = read_tags(path_str)
+        seed = genre_seed(
+            tags["genre"],
+            tags["title"],
+            tags["artist"],
+            path=path_str,
+            year=tags.get("year"),
+            extra_text=tags.get("extra_text") or "",
+            albumartist=tags.get("albumartist") or "",
+            composer=tags.get("composer") or "",
+            replaygain_db=tags.get("replaygain_db"),
+        )
+        bpm = tags.get("bpm")
+        conf, note = mood_confidence(
+            tag_key=seed.tag_key,
+            path_key=seed.path_key,
+            pcm_ok=False,
+            bpm_ok=bpm is not None,
+            replaygain=tags.get("replaygain_db") is not None,
+            keyword_hit=seed.keyword_hit,
+            weak_tags=path.suffix.lower() in {".wav", ".aiff", ".aif"},
+        )
+        library.upsert_track(
+            {
+                "path": path_str,
+                "title": tags["title"],
+                "artist": tags["artist"],
+                "album": tags["album"],
+                "albumartist": tags.get("albumartist") or "",
+                "genre": tags["genre"],
+                "duration_ms": tags["duration_ms"],
+                "year": tags["year"],
+                "bpm": tags["bpm"],
+                "valence": seed.valence,
+                "energy": seed.energy,
+                "mood_confidence": conf,
+                "confidence_note": note or "pre-analyze",
+                "low_trust": int(confidence_low_trust(conf)),
+                "added_at": now,
+                "mtime": st.st_mtime,
+                "analyzed": 0,
+            }
+        )
+        added += 1
     if found and prune_roots and not should_stop():
         library.delete_missing(found, only_under=prune_roots)
     return added
+
 
 
 def analyze_pending(

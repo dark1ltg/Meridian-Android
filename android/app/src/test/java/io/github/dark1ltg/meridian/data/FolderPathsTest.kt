@@ -34,4 +34,18 @@ class FolderPathsTest {
     fun garbage() {
         assertNull(FolderPaths.fromDocumentId("nope"))
     }
+
+    @Test
+    fun displayNameFromContentTree() {
+        val uri = "content://com.android.externalstorage.documents/tree/primary%3AMusic"
+        assertEquals("Music", FolderPaths.displayName(uri))
+    }
+
+    @Test
+    fun displayNameSharedFallback() {
+        assertEquals(
+            "Shared folder",
+            FolderPaths.displayName("content://com.example.provider/tree/xyz"),
+        )
+    }
 }

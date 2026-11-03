@@ -286,3 +286,46 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
     finally:
         set_path_probe(None)
         session.close()
+
+
+def test_scan_progress_reports_file_and_counts(tmp_path: Path) -> None:
+    from meridian.scan_core import scan_library
+
+    music = tmp_path / "Music"
+    music.mkdir()
+    for name in ("a.mp3", "b.flac", "c.ogg"):
+        (music / name).write_bytes(b"x")
+    lib = Library(tmp_path / "lib.sqlite")
+    lib.add_folder(str(music))
+    seen: list[tuple[str, int, int]] = []
+
+    def on_progress(name: str, index: int, total: int) -> None:
+        seen.append((name, index, total))
+
+    added = scan_library(lib, force=True, progress=on_progress)
+    assert added == 3
+    numbered = [row for row in seen if row[2] > 0]
+    assert len(numbered) == 3
+    assert numbered[0] == ("a.mp3", 1, 3) or numbered[0][1:] == (1, 3)
+    assert numbered[-1][1:] == (3, 3)
+    assert {row[0] for row in numbered} == {"a.mp3", "b.flac", "c.ogg"}
+    lib.close()
+
+
+def test_content_tree_folder_add_and_remove(tmp_path: Path) -> None:
+    tree = "content://com.android.externalstorage.documents/tree/primary%3APodcasts"
+    track = f"{tree}/document/primary%3APodcasts%2Fglow.mp3"
+    set_path_probe(_Probe({track}))
+    session = AndroidSession()
+    try:
+        session.initialize(str(tmp_path / "data"), "")
+        snap = session.add_folders([tree])
+        assert tree in snap["folders"]
+        session.add_uri_tracks([{"path": track, "title": "Glow.mp3"}])
+        assert session.library.get(session.library.all_tracks()[0].id) is not None
+        snap = session.remove_folder(tree)
+        assert tree not in snap["folders"]
+        assert snap["track_count"] == 0
+    finally:
+        set_path_probe(None)
+        session.close()

@@ -13,7 +13,7 @@ Playback uses AndroidX **Media3 / ExoPlayer**. The engine is CPython 3.12 via **
 - Play Context starts the neighborhood queue from the lens
 - Modes: Focus, Wander, Charge, Dim (mode chip in the top bar; also under More → Audio)
 - Debounced search, love, skip / previous
-- Add extra folders with the system directory picker. SD / USB trees are walked when they have a real path, or copied into app storage when they do not. **Index all audio on this phone** pulls directories from the system music catalog (MediaStore).
+- Add extra folders with the system directory picker (SAF). Meridian keeps a persistable read grant for each tree, indexes via `DocumentFile` (filesystem walk when Android exposes a listable `/storage/…` path, otherwise `content:` URI tracks), and Remove drops the folder row, its tracks, and the grant. **Index all audio on this phone** pulls directories from the system music catalog (MediaStore).
 
 - Scan and Listen report progress once per surface and can be cancelled
 - **Lockscreen / background playback** — a foreground `MediaSessionService` keeps audio going when the screen is locked or you switch apps. Notification and lockscreen show title, artist, play/pause, skip, and previous (no album art). Skip/previous still go through the context queue. Opening Meridian from those controls still requires the device lock (PIN, password, pattern, biometric, or face — whatever the phone uses). The app itself is never drawn over a locked keyguard.
@@ -30,7 +30,7 @@ bash android/scripts/build-media3-ffmpeg.sh
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 137**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 138**).
 
 | Asset | |
 |---|---|

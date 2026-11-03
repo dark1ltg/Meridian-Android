@@ -29,6 +29,12 @@ object SafIngest {
         val readable = LinkedHashSet<String>()
         val uriTracks = ArrayList<SafTrack>()
         var seen = 0
+        // Prefer the tree root itself when Android exposes a real path — keeps
+        // Settings → Folders showing one row the user can remove.
+        val rootPath = FolderPaths.fromTreeUri(tree.toString())
+        if (!rootPath.isNullOrBlank() && File(rootPath).isDirectory) {
+            readable += rootPath
+        }
         walk(root, "") { doc, _ ->
             if (seen >= maxFiles) return@walk
             val name = doc.name ?: return@walk
@@ -42,8 +48,14 @@ object SafIngest {
                 uriTracks += SafTrack(doc.uri.toString(), displayTitle(name))
             }
         }
+        var folders = MediaStoreMusic.dropNested(readable.toList())
+        // URI-only trees still need a folders row so Add isn't a silent no-op
+        // and Remove has something to target.
+        if (folders.isEmpty() && (uriTracks.isNotEmpty() || root.listFiles().isNotEmpty())) {
+            folders = listOf(tree.toString())
+        }
         return SafIngestResult(
-            folders = MediaStoreMusic.dropNested(readable.toList()),
+            folders = folders,
             uriTracks = uriTracks.distinctBy { it.uri },
         )
     }

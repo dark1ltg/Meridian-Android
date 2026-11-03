@@ -32,7 +32,13 @@ object FolderPaths {
     }
 
     fun displayName(path: String): String {
-        val trimmed = path.trimEnd('/')
+        val raw = path.trim()
+        if (raw.startsWith("content:")) {
+            val decoded = fromTreeUri(raw)
+            if (!decoded.isNullOrBlank()) return displayName(decoded)
+            return "Shared folder"
+        }
+        val trimmed = raw.trimEnd('/')
         return trimmed.substringAfterLast('/').ifBlank { trimmed }
     }
 }

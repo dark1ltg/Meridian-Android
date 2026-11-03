@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.dark1ltg.meridian.data.JobProgress
 import io.github.dark1ltg.meridian.data.TrackRow
 import io.github.dark1ltg.meridian.ui.theme.Card
 import io.github.dark1ltg.meridian.ui.theme.Cream
@@ -75,7 +77,11 @@ sealed class Overlay {
 }
 
 @Composable
-fun MainScreen(vm: SessionViewModel, ui: UiState) {
+fun MainScreen(
+    vm: SessionViewModel,
+    ui: UiState,
+    onLeaveApp: () -> Unit = {},
+) {
     MainScreen(
         ui = ui,
         onToggleSearch = { vm.toggleSearch(!ui.searchOpen) },
@@ -98,6 +104,7 @@ fun MainScreen(vm: SessionViewModel, ui: UiState) {
         onCancelJob = vm::cancelJob,
         onVolume = vm::setVolume,
         onIndexAll = vm::indexAllDeviceAudio,
+        onLeaveApp = onLeaveApp,
     )
 }
 
@@ -124,12 +131,24 @@ fun MainScreen(
     onCancelJob: () -> Unit = {},
     onVolume: (Float) -> Unit = {},
     onIndexAll: () -> Unit = {},
+    onLeaveApp: () -> Unit = {},
     initialTab: AppTab = AppTab.Map,
     initialOverlay: Overlay = Overlay.None,
 ) {
     var tab by remember { mutableStateOf(initialTab) }
     var overlay by remember { mutableStateOf(initialOverlay) }
     var toast by remember { mutableStateOf<String?>(null) }
+    val searchOpen = overlay is Overlay.Search || ui.searchOpen
+    BackHandler {
+        when {
+            overlay !is Overlay.None || searchOpen -> {
+                if (searchOpen) onToggleSearch()
+                overlay = Overlay.None
+            }
+            tab != AppTab.Map -> tab = AppTab.Map
+            else -> onLeaveApp()
+        }
+    }
     LaunchedEffect(toast) {
         if (toast != null) {
             delay(1400)
@@ -305,10 +324,12 @@ fun MainScreen(
 
 @Composable
 internal fun JobStrip(ui: UiState, onCancel: () -> Unit) {
+    val job = ui.job
+    val label = jobLabel(job, ui.message)
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-        if (ui.job.total > 0) {
+        if (job.total > 0) {
             LinearProgressIndicator(
-                progress = { ui.job.fraction },
+                progress = { job.fraction },
                 modifier = Modifier.fillMaxWidth(),
                 color = Orange,
                 trackColor = Color(0x22FFFFFF),
@@ -323,15 +344,25 @@ internal fun JobStrip(ui: UiState, onCancel: () -> Unit) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                ui.job.message.ifBlank { ui.message },
-                color = Mute,
-                fontSize = 12.sp,
-                modifier = Modifier.weight(1f).padding(end = 8.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                Text(
+                    label,
+                    color = Mute,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (job.total > 0 && job.current > 0) {
+                    Text(
+                        "${job.current} of ${job.total}",
+                        color = Cream,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
             Text(
                 "Cancel",
                 color = Orange,
@@ -340,6 +371,20 @@ internal fun JobStrip(ui: UiState, onCancel: () -> Unit) {
             )
         }
     }
+}
+
+internal fun jobLabel(job: JobProgress, fallback: String): String {
+    val raw = job.message.ifBlank { fallback }.trim()
+    if (raw.isEmpty()) {
+        return when (job.kind) {
+            "listen" -> "Listening…"
+            "rescan" -> "Rescanning…"
+            else -> "Scanning…"
+        }
+    }
+    // Engine may already embed "name — N of T"; keep the filename line clean.
+    val cut = raw.indexOf(" — ")
+    return if (cut > 0) raw.substring(0, cut) else raw
 }
 
 @Composable

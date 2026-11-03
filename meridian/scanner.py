@@ -7,7 +7,7 @@ from meridian.scan_core import analyze_pending, scan_library
 
 
 class ScanWorker(QObject):
-    progress = Signal(str)
+    progress = Signal(str, int, int)
     finished = Signal(int)
     failed = Signal(str)
 
@@ -35,7 +35,7 @@ class ScanWorker(QObject):
             self.library,
             force=self.force,
             abort=lambda: self._abort,
-            progress=lambda name: self.progress.emit(name),
+            progress=lambda name, index, total: self.progress.emit(name, index, total),
         )
 
 
