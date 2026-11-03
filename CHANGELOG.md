@@ -7,13 +7,14 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-03
 
-Published on this repo’s Releases page (**versionCode 148** / versionName 1.3.6):
+Published on this repo’s Releases page (**versionCode 149** / versionName 1.3.6):
 
-- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); checksums refresh with versionCode 148
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); checksums refresh with versionCode 149
 - **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
+- **Dense clusters**: collision-aware labels stagger (or drop) overlapping titles; deep dig-in blooms only the selected track and eases glow so packed stars stay readable
 - **Map dig-in**: pinch outside the lens zooms toward your fingers up to ~5×; deep-zoom LOD caps star size / bloom and thins the galaxy wash so dig-in stays smooth (~60 fps target)
 - **Lens**: drag that starts on/near the ring aims the lens (nearby stars no longer steal the gesture for pin); pinch min radius lowered to ~0.05 for tighter clusters in dense neighborhoods
 - **Now Playing**: media-item transitions sync title/artist/art and queue highlight from the cached shell (no full classify per advance); skip and natural next update the player page with the audio

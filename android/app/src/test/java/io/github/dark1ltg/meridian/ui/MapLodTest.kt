@@ -22,7 +22,7 @@ class MapLodTest {
     @Test
     fun deepZoomLimitsBloomAndAllowsMoreLabels() {
         assertFalse(MapLod.shouldBloom(4.5f, "shelf", selected = false))
-        assertTrue(MapLod.shouldBloom(4.5f, "now", selected = false))
+        assertFalse(MapLod.shouldBloom(4.5f, "now", selected = false))
         assertTrue(MapLod.shouldBloom(4.5f, "shelf", selected = true))
         assertEquals(MapLod.MAX_LABELS_DEEP, MapLod.maxLabels(4f))
         assertEquals(MapLod.MAX_LABELS, MapLod.maxLabels(2f))
@@ -32,6 +32,7 @@ class MapLodTest {
     fun starSizeCapsAtDeepZoom() {
         assertTrue(MapLod.starSizeScale(MapLod.ZOOM_MAX) <= 1.35f + 0.001f)
         assertTrue(MapLod.galaxyAlpha(MapLod.ZOOM_MAX) >= 0.22f)
+        assertTrue(MapLod.glowScale(MapLod.ZOOM_MAX) < MapLod.glowScale(2.5f))
     }
 
     @Test

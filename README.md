@@ -10,10 +10,10 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 
 ## Download
 
-Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 148**):
+Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 149**):
 
 - **APK:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (arm64-v8a; aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **APK SHA-256:** see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 148)
+- **APK SHA-256:** see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 149)
 - **Source:** [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) 
 - **Source SHA-256:** see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)
 
@@ -27,7 +27,7 @@ On the phone: open the APK, allow install from that source if asked. Needs **And
 
 ## Features
 
-- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dig in up to ~5× (toward your fingers); star titles appear when zoomed. Lens motion is a local overlay (Titan 2 / 1440² class) so aiming stays at display refresh; HUD fades while aiming; queues follow on lift or idle
+- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dig in up to ~5× (toward your fingers); star titles appear when zoomed and stagger when packed. Lens motion is a local overlay (Titan 2 / 1440² class) so aiming stays at display refresh; HUD fades while aiming; queues follow on lift or idle
 - **Empty library** — Index / Folder / Scan / Listen actions on the map when nothing is indexed yet
 - **Listen matrix** — Context tab is matrix-only on the night sky (NOW / DEEP / FILL / SHELF)
 - **Context queue** — replenishes from the lens, time of day, and listening mode (Focus, Wander, Charge, Dim)

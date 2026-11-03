@@ -48,6 +48,22 @@ class MoodMapMathTest {
     }
 
     @Test
+    fun collisionLabelsStaggerOrDropOverlaps() {
+        val a = row(1, 0.5f, 0.5f)
+        val b = row(2, 0.5f, 0.5f).copy(title = "SameSpotOther")
+        val anchor = Offset(200f, 200f)
+        val placed = placeStarLabels(listOf(anchor to a, anchor to b), maxLabels = 8)
+        assertEquals(2, placed.size)
+        assertTrue(placed[0].drawAt != placed[1].drawAt)
+        val stacked = placeStarLabels(
+            List(12) { i -> anchor to row(i, 0.5f, 0.5f).copy(title = "Track$i") },
+            maxLabels = 12,
+        )
+        assertTrue(stacked.size < 12)
+        assertTrue(stacked.size >= 2)
+    }
+
+    @Test
     fun nearestPicksClosestStar() {
         val a = row(1, 0.2f, 0.8f)
         val b = row(2, 0.8f, 0.2f)
