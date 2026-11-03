@@ -14,6 +14,8 @@ Published on this repo’s Releases page (**versionCode 138** / versionName 1.3.
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
+- Settings Add folder uses SAF persistable grants (`DocumentFile` ingest); Remove clears the folder row, its tracks, and the URI grant; music/notification permission prompts at most once
+- Root Back backgrounds the task instead of finishing; overview resume skips splash; scan/Listen job strip shows the current filename plus **N of total**
 - Mood-map lens aims at pointer rate on Titan 2 class phones (1440×1440 @ 120 Hz): starfield stays put while the ring moves, HUD mood words update locally, and `set_lens` / queue rebuild wait for finger-up or 150 ms idle
 - Map HUD fades while aiming; empty library exposes Index / Folder / Scan / Listen on the map; mode chip in the top bar; pin/love flash confirmation; Listen is the primary library verb (Scan/Rescan under Advanced); Context is matrix-only on the night sky (no inset mini-map); job progress shows once per surface; search field is local-draft + debounced
 - Lens drag no longer walks every star for hover, reallocates the shade path, or sends Python a classify on each move
@@ -28,7 +30,7 @@ Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 - Mini player, queue, why-this-track, and lockscreen/notification chrome use generated art only (no embedded album covers)
 - Android playback uses the same always-on ~3s dual-deck crossfade as desktop (skip / pause / seek interrupt the fade; near-end auto-advance)
 - Crossfade listen credit matches desktop: deferred play_count, 8s skip/finish on jumps, finish-nudge the outgoing track when a natural fade lands, Prev restores the outgoing song
-- Index all device audio via MediaStore; SAF USB/SD trees walk as real `/storage/…` paths or copy into app files when the OS has no path
+- Index all device audio via MediaStore; SAF trees walk as real `/storage/…` paths when listable, otherwise index as `content:` URI tracks under a shared-folder row
 - Mood map viewport-culls stars, caps labels, and fades glow/chrome with zoom; dragging near a star names it
 - Settings Appearance / Privacy / About open real pages; More can index all audio on the phone
 - GitHub Release APK is **arm64-v8a**, signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)

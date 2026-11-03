@@ -31,7 +31,8 @@ On the phone: open the APK, allow install from that source if asked. Needs **And
 - **Empty library** — Index / Folder / Scan / Listen actions on the map when nothing is indexed yet
 - **Listen matrix** — Context tab is matrix-only on the night sky (NOW / DEEP / FILL / SHELF)
 - **Context queue** — replenishes from the lens, time of day, and listening mode (Focus, Wander, Charge, Dim)
-- **Library** — add a real directory via the system picker; Listen is the primary library verb (Scan / Rescan under Advanced); progress shows once per surface and can be cancelled
+- **Library** — add a real directory via the system picker (SAF grant kept across restarts; Remove drops folder, tracks, and grant); Listen is the primary library verb (Scan / Rescan under Advanced); Scan/Listen show the current filename and **N of total** and can be cancelled
+- **Back** — leaves Meridian in overview without replaying splash on return
 - **Honest why** — queue reasons use fit, importance, love, pins, play/skip counts, clock band, and mode
 - **Background playback** — lockscreen and notification controls; audio keeps going when you switch apps
 - **Crossfade** — ~3s overlap between tracks (always-on dual-deck)
