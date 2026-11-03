@@ -81,12 +81,40 @@ def test_previous_during_fade_restores_outgoing(tmp_path: Path) -> None:
     session.initialize(str(tmp_path / "data"), str(music))
     session.scan()
     a, b = session.library.all_tracks()[0].id, session.library.all_tracks()[1].id
+    # First play commits immediately even if the post-scan queue pointed elsewhere
+    # (queue index is not live audio yet).
     session.play(a)
+    assert session._xfade_out is None
+    assert session.library.get(a).play_count >= 1
     plays = session.library.get(a).play_count
     session.play(b, position_ms=1_000)
+    assert session._xfade_out == a
+    assert session._pending_play == b
     snap = session.previous()
     assert snap["current"]["id"] == a
+    # Previous cancels the fade — do not bump A's play count again.
     assert session.library.get(a).play_count == plays
+    assert session.library.get(b).play_count == 0
+    session.close()
+
+
+def test_first_play_after_scan_is_not_a_phantom_crossfade(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "a.mp3").write_bytes(b"ID3")
+    (music / "b.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    assert session.queue_ids
+    # Deliberately play the non-current queue row first.
+    other = next(tid for tid in session.queue_ids[1:] ) if len(session.queue_ids) > 1 else session.queue_ids[0]
+    if other == session.queue_ids[0] and len(session.library.all_tracks()) > 1:
+        other = next(t.id for t in session.library.all_tracks() if t.id != session.queue_ids[0])
+    session.play(other)
+    assert session._xfade_out is None
+    assert session._pending_play is None
+    assert session.library.get(other).play_count >= 1
     session.close()
 
 

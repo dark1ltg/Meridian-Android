@@ -1,11 +1,11 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 144**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 145**).
 
 ## Downloads
 
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | see asset `.sha256` on the release (versionCode 144) |
+| **APK SHA-256** | see asset `.sha256` on the release (versionCode 145) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
 | **Source SHA-256** | see asset `.sha256` on the release |
 
@@ -15,6 +15,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 ```
 
 ## What’s in this build
+- **Crossfade** — first play after scan commits immediately (queue “current” is not live audio); no phantom fade / deferred play credit until real playback has started
 - **UI responsiveness** — cheaper snapshots (no content-URI open per track; skip map why-text); optimistic tap-to-play; deferred Python/cold splash; separate playback clock; throttled nearby count; lighter map galaxy; async cover art; seek commits on release
 - **Renew Queue** — Queue / Context **Renew** rebuilds the context queue from the current listen matrix; **Play Context** syncs a stale queue to the lens; Renew keeps what’s playing up front; recent plays stay soft-skipped
 - **Lens hold** — aiming updates the matrix without wiping the live queue; stale-queue hint on Queue / Context; tiny lens jitter no longer resets Renew variety
@@ -32,7 +33,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 - Native **aubio** + Media3 **FFmpeg JNI** (`libffmpegJNI.so`) for Listen/playback fallback
 
 ## Notes
-- Minimum **Android 8.0 (API 26)**; **versionCode 144** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 145** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file
