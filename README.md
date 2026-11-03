@@ -10,12 +10,12 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 
 ## Download
 
-Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 147**):
+Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 148**):
 
-- **APK:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB, arm64-v8a; aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **APK SHA-256:** `7b5a69d60169177aa346d29bd28ec529bb7f6a3efc3b07114cef43791d8562c8` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256))
-- **Source:** [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB; full tree at the release commit)
-- **Source SHA-256:** `f480516fa0976e8de9eb96471c7949162cf906e5d41e2170f4cb8e962682607a` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256))
+- **APK:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (arm64-v8a; aubio + Media3 FFmpeg JNI + meridian_pcm)
+- **APK SHA-256:** see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 148)
+- **Source:** [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) 
+- **Source SHA-256:** see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)
 
 ```bash
 # verify, then install
@@ -27,7 +27,7 @@ On the phone: open the APK, allow install from that source if asked. Needs **And
 
 ## Features
 
-- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dive-zoom; star titles appear when zoomed. Lens motion is a local overlay (Titan 2 / 1440² class) so aiming stays at display refresh; HUD fades while aiming; queues follow on lift or idle
+- **Mood map** — pan empty sky, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dig in up to ~5× (toward your fingers); star titles appear when zoomed. Lens motion is a local overlay (Titan 2 / 1440² class) so aiming stays at display refresh; HUD fades while aiming; queues follow on lift or idle
 - **Empty library** — Index / Folder / Scan / Listen actions on the map when nothing is indexed yet
 - **Listen matrix** — Context tab is matrix-only on the night sky (NOW / DEEP / FILL / SHELF)
 - **Context queue** — replenishes from the lens, time of day, and listening mode (Focus, Wander, Charge, Dim)
