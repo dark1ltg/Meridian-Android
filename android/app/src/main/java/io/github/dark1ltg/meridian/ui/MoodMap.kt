@@ -52,6 +52,10 @@ import kotlinx.coroutines.launch
  * Marked [Stable] so [MoodMap] can skip composition while only [x]/[y]/[radius]
  * change (Titan 2 class: 1440×1440 @ 120 Hz, ~8–16 ms/frame).
  */
+/** Mood-space lens radius clamp (matches engine max; UI floor keeps the ring grabbable). */
+internal const val LENS_RADIUS_MIN = 0.05f
+internal const val LENS_RADIUS_MAX = 0.48f
+
 @Stable
 class LensAim(
     x: Float = 0.5f,
@@ -62,7 +66,7 @@ class LensAim(
         internal set
     var y by mutableFloatStateOf(y.coerceIn(0f, 1f))
         internal set
-    var radius by mutableFloatStateOf(radius.coerceIn(0.08f, 0.48f))
+    var radius by mutableFloatStateOf(radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX))
         internal set
     var dragging by mutableStateOf(false)
         internal set
@@ -71,7 +75,7 @@ class LensAim(
         if (dragging) return
         x = lx.coerceIn(0f, 1f)
         y = ly.coerceIn(0f, 1f)
-        radius = r.coerceIn(0.08f, 0.48f)
+        radius = r.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX)
     }
 
     fun moveTo(lx: Float, ly: Float) {
@@ -80,7 +84,7 @@ class LensAim(
     }
 
     fun resizeBy(factor: Float) {
-        radius = (radius * factor).coerceIn(0.08f, 0.48f)
+        radius = (radius * factor).coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX)
     }
 }
 
@@ -170,7 +174,7 @@ fun MoodMap(
                         latestOnHover.value(hover!!.second)
                     }
                     val lensPx = moodToPx(aim.x, aim.y, w, h, localPan, localZoom)
-                    val rr = aim.radius.coerceIn(0.08f, 0.48f) * min(w, h) * localZoom
+                    val rr = aim.radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX) * min(w, h) * localZoom
                     val nearLens = hypot(
                         (down.position.x - lensPx.x).toDouble(),
                         (down.position.y - lensPx.y).toDouble(),
@@ -189,7 +193,7 @@ fun MoodMap(
                             val panChange = event.calculatePan()
                             val centroid = event.calculateCentroid(useCurrent = true)
                             val liveLens = moodToPx(aim.x, aim.y, w, h, localPan, localZoom)
-                            val liveRr = aim.radius.coerceIn(0.08f, 0.48f) * min(w, h) * localZoom
+                            val liveRr = aim.radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX) * min(w, h) * localZoom
                             if (pressed.size >= 2 && zoomChange != 1f) {
                                 pinId = null
                                 val inside = hypot(
@@ -212,8 +216,12 @@ fun MoodMap(
                                 if (travel < pinSlop) {
                                     continue
                                 }
-                                if (pinId == null && star != null) {
-                                    pinId = star.id
+                                // Lens grab wins over star pin when the press started on the ring.
+                                val downStar = star
+                                if (pinId == null && downStar != null &&
+                                    shouldLatchStarPin(nearLens = nearLens, hasStar = true)
+                                ) {
+                                    pinId = downStar.id
                                 }
                                 val p = pressed[0].position
                                 if (shouldHitTestStars(aimingLens = nearLens || compact || aimed, pinning = pinId != null)) {
@@ -346,7 +354,7 @@ private fun LensChromeLayer(
         val w = size.width
         val h = size.height
         val lens = moodToPx(aim.x, aim.y, w, h, pan, zoom)
-        val rr = aim.radius.coerceIn(0.12f, 0.48f) * min(w, h) * zoom
+        val rr = aim.radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX) * min(w, h) * zoom
         val chrome = MapLod.chromeAlpha(zoom)
         shadePath.rewind()
         shadePath.fillType = PathFillType.EvenOdd
@@ -430,4 +438,9 @@ internal fun nearest(
 
 internal fun shouldHitTestStars(aimingLens: Boolean, pinning: Boolean): Boolean {
     return !aimingLens && !pinning
+}
+
+/** Star pin only when the press did not start on/near the lens ring. */
+internal fun shouldLatchStarPin(nearLens: Boolean, hasStar: Boolean): Boolean {
+    return hasStar && !nearLens
 }
