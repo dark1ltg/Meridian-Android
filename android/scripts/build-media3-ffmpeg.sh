@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Build Media3 1.4.1 FFmpeg JNI (libffmpegJNI.so) for Meridian's ABIs.
-# Google does not ship those .so files on Maven.
+# Build Media3 1.4.1 FFmpeg JNI (libffmpegJNI.so) and Meridian Listen PCM
+# (libmeridian_pcm.so: avformat seek → mono f32le @ 11025) for Meridian's ABIs.
+# Google does not ship Media3 FFmpeg .so files on Maven.
 #
 #   export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.3.11579264
 #   bash android/scripts/build-media3-ffmpeg.sh
 #
 # Writes android/app/src/main/jniLibs/<abi>/libffmpegJNI.so
-# (avcodec/avutil/swresample are statically linked).
+#         android/app/src/main/jniLibs/<abi>/libmeridian_pcm.so
+# (avformat/avcodec/avutil/swresample statically linked into meridian_pcm).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 NDK="${ANDROID_NDK_HOME:-${ANDROID_HOME:-$HOME/Android/Sdk}/ndk/26.3.11579264}"
@@ -16,7 +18,15 @@ WORK="${ROOT}/android/.ffmpeg-build"
 JNI="$WORK/jni"
 FFMPEG="$JNI/ffmpeg"
 OUT_LIBS="${ROOT}/android/app/src/main/jniLibs"
+PCM_SRC="${ROOT}/android/app/src/main/cpp/meridian_pcm_jni.c"
+PCM_CMAKE="${ROOT}/android/app/src/main/cpp/meridian_pcm_CMakeLists.txt"
 ENABLED_DECODERS=(vorbis opus flac alac mp3 aac pcm_s16le pcm_s24le pcm_f32le wmav2)
+ENABLED_DEMUXERS=(
+  mp3 aac mov flac ogg wav matroska asf
+  mpegts mpeg aiff avi ac3 eac3 ape wv
+)
+ENABLED_PARSERS=(aac mpegaudio flac opus vorbis ac3)
+ENABLED_PROTOCOLS=(file fd pipe)
 # Comma/space-separated override, e.g. MERIDIAN_FFMPEG_ABIS=arm64-v8a for release CI.
 if [[ -n "${MERIDIAN_FFMPEG_ABIS:-}" ]]; then
   # shellcheck disable=SC2206
@@ -28,6 +38,10 @@ MEDIA3_JNI_BASE="https://raw.githubusercontent.com/androidx/media/1.4.1/librarie
 
 if [[ ! -d "$NDK" ]]; then
   echo "Set ANDROID_NDK_HOME to an NDK r26+ tree (missing: $NDK)." >&2
+  exit 1
+fi
+if [[ ! -f "$PCM_SRC" || ! -f "$PCM_CMAKE" ]]; then
+  echo "Missing meridian_pcm sources under android/app/src/main/cpp/" >&2
   exit 1
 fi
 
@@ -62,11 +76,11 @@ COMMON_OPTIONS=(
   --disable-programs
   --disable-everything
   --disable-avdevice
-  --disable-avformat
   --disable-swscale
   --disable-postproc
   --disable-avfilter
   --disable-symver
+  --enable-avformat
   --enable-swresample
   --extra-ldexeflags=-pie
   --disable-v4l2-m2m
@@ -74,6 +88,15 @@ COMMON_OPTIONS=(
 )
 for decoder in "${ENABLED_DECODERS[@]}"; do
   COMMON_OPTIONS+=(--enable-decoder="${decoder}")
+done
+for demuxer in "${ENABLED_DEMUXERS[@]}"; do
+  COMMON_OPTIONS+=(--enable-demuxer="${demuxer}")
+done
+for parser in "${ENABLED_PARSERS[@]}"; do
+  COMMON_OPTIONS+=(--enable-parser="${parser}")
+done
+for proto in "${ENABLED_PROTOCOLS[@]}"; do
+  COMMON_OPTIONS+=(--enable-protocol="${proto}")
 done
 
 CMAKE_BIN="${ANDROID_HOME:-$HOME/Android/Sdk}/cmake/3.22.1/bin/cmake"
@@ -99,17 +122,42 @@ link_jni() {
   echo "Wrote $dest"
 }
 
+link_meridian_pcm() {
+  local abi="$1"
+  local dest="$OUT_LIBS/$abi/libmeridian_pcm.so"
+  local libdir="$FFMPEG/android-libs/${abi}"
+  local bdir="$WORK/cmake-pcm-$abi"
+  rm -rf "$bdir"
+  mkdir -p "$bdir" "$OUT_LIBS/$abi"
+  cp -f "$PCM_CMAKE" "$bdir/CMakeLists.txt"
+  "$CMAKE_BIN" -S "$bdir" -B "$bdir/out" \
+    -DCMAKE_TOOLCHAIN_FILE="${NDK}/build/cmake/android.toolchain.cmake" \
+    -DANDROID_ABI="$abi" \
+    -DANDROID_PLATFORM="android-${API}" \
+    -DANDROID_STL=c++_shared \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DMERIDIAN_PCM_SRC="$PCM_SRC" \
+    -DMERIDIAN_FFMPEG_LIBDIR="$libdir" \
+    -DMERIDIAN_FFMPEG_INCLUDE="$FFMPEG"
+  "$CMAKE_BIN" --build "$bdir/out" --target meridian_pcm -j"$JOBS"
+  cp -f "$bdir/out/libmeridian_pcm.so" "$dest"
+  "${TOOLCHAIN_PREFIX}/llvm-strip" --strip-unneeded "$dest" || true
+  echo "Wrote $dest"
+}
+
 build_ffmpeg_abi() {
   local abi="$1" arch="$2" cpu="$3" triple="$4" extra_cflags="${5:-}" extra_ldflags="${6:-}" extra_conf="${7:-}"
   local dest="$OUT_LIBS/$abi/libffmpegJNI.so"
-  if [[ -f "$dest" ]]; then
-    echo "Already have $dest"
+  local pcm_dest="$OUT_LIBS/$abi/libmeridian_pcm.so"
+  if [[ -f "$dest" && -f "$pcm_dest" && -z "${MERIDIAN_FFMPEG_FORCE:-}" ]]; then
+    echo "Already have $dest and $pcm_dest"
     return 0
   fi
   cd "$FFMPEG"
   make distclean >/dev/null 2>&1 || true
   # shellcheck disable=SC2086
   ./configure \
+    --prefix="$FFMPEG/android-prefix/${abi}" \
     --libdir="android-libs/${abi}" \
     --arch="$arch" \
     --cpu="$cpu" \
@@ -126,6 +174,7 @@ build_ffmpeg_abi() {
   make install-libs
   # Generated headers (avconfig.h) vanish on distclean — link JNI first.
   link_jni "$abi"
+  link_meridian_pcm "$abi"
   make distclean >/dev/null 2>&1 || true
 }
 
@@ -144,4 +193,4 @@ for abi in "${ABIS[@]}"; do
   esac
 done
 
-echo "FFmpeg JNI ready under $OUT_LIBS"
+echo "FFmpeg JNI + meridian_pcm ready under $OUT_LIBS"

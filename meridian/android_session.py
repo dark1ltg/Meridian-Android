@@ -282,6 +282,12 @@ class AndroidSession:
             if not _path_playable(path):
                 continue
             name = title or path.rsplit("/", 1)[-1]
+            duration_ms = 0
+            if isinstance(raw, dict):
+                try:
+                    duration_ms = int(float(raw.get("duration_ms") or 0))
+                except (TypeError, ValueError):
+                    duration_ms = 0
             lib.upsert_track(
                 {
                     "path": path,
@@ -290,7 +296,7 @@ class AndroidSession:
                     "album": "",
                     "albumartist": "",
                     "genre": "",
-                    "duration_ms": 0,
+                    "duration_ms": max(0, duration_ms),
                     "year": None,
                     "bpm": None,
                     "valence": 0.5,
@@ -416,10 +422,13 @@ class AndroidSession:
         lib = self._require()
         self._begin_job("listen", "Listening…")
         try:
+            # Two Listen workers: each thread keeps its own decoder session.
+            # Same mood windows as desktop — parallel files only.
             analyze_pending(
                 lib,
                 abort=self._abort.is_set,
                 progress=self._on_listen_progress,
+                workers=2,
             )
             self.status = "Listen stopped" if self._abort.is_set() else "Mood listen finished"
             self._rebuild_queue(keep_current=True)
@@ -445,6 +454,7 @@ class AndroidSession:
                     lib,
                     abort=self._abort.is_set,
                     progress=self._on_listen_progress,
+                    workers=2,
                 )
             self.status = (
                 "Rescan stopped"

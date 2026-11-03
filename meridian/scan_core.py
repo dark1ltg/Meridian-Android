@@ -177,69 +177,32 @@ def scan_library(
 
 
 
-def analyze_pending(
-    library: Library,
-    *,
-    abort: AbortFn | None = None,
-    progress: AnalyzeProgressFn | None = None,
-) -> None:
-    from meridian.features import clear_decode_abort
-
-    should_stop = abort or (lambda: False)
-    clear_decode_abort()
-    ids = library.unanalyzed_ids()
-    total = len(ids)
-    for index, track_id in enumerate(ids, start=1):
-        if should_stop():
-            break
-        track = library.get(track_id)
-        if not track:
-            continue
-        if progress:
-            progress(track.short_title, index, total)
-        try:
-            tags = read_tags(track.path)
-            result = analyze_audio(
-                track.path,
-                track.genre or tags.get("genre") or "",
-                track.title,
-                track.artist,
-                track.bpm if track.bpm is not None else tags.get("bpm"),
-                year=track.year if track.year is not None else tags.get("year"),
-                extra_text=tags.get("extra_text") or "",
-                albumartist=track.albumartist or tags.get("albumartist") or "",
-                composer=tags.get("composer") or "",
-                replaygain_db=tags.get("replaygain_db"),
-                duration_ms=track.duration_ms or int(tags.get("duration_ms") or 0),
-            )
-            if should_stop():
-                break
-            if not result.pcm_ok:
-                # No waveform this pass. Prior PCM → keep placement and conclude.
-                # Seed-only → still show on the map. Otherwise defer for retry.
-                if library.had_pcm_acoustics(track.id):
-                    library.conclude_kept_prior(track.id)
-                elif result.seed_evidence:
-                    library.set_analyzed_mood(
-                        track.id,
-                        result.valence,
-                        result.energy,
-                        result.bpm,
-                        confidence=result.confidence,
-                        low_trust=result.low_trust,
-                        confidence_note=result.confidence_note,
-                        onset_consistency=result.onset_consistency,
-                        acoustic_flux=result.acoustic_flux,
-                        brightness=result.brightness,
-                        shape_note=result.shape_note,
-                        timbre_flag=result.timbre_flag,
-                        timbre_source=result.timbre_source,
-                        steer_weight=result.steer_weight,
-                        from_pcm=False,
-                    )
-                else:
-                    library.defer_analyze(track.id)
-            else:
+def _analyze_one_track(library: Library, track_id: int) -> None:
+    """Analyze a single track id into *library* (thread-safe via library.lock)."""
+    track = library.get(track_id)
+    if not track:
+        return
+    try:
+        tags = read_tags(track.path)
+        result = analyze_audio(
+            track.path,
+            track.genre or tags.get("genre") or "",
+            track.title,
+            track.artist,
+            track.bpm if track.bpm is not None else tags.get("bpm"),
+            year=track.year if track.year is not None else tags.get("year"),
+            extra_text=tags.get("extra_text") or "",
+            albumartist=track.albumartist or tags.get("albumartist") or "",
+            composer=tags.get("composer") or "",
+            replaygain_db=tags.get("replaygain_db"),
+            duration_ms=track.duration_ms or int(tags.get("duration_ms") or 0),
+        )
+        if not result.pcm_ok:
+            # No waveform this pass. Prior PCM → keep placement and conclude.
+            # Seed-only → still show on the map. Otherwise defer for retry.
+            if library.had_pcm_acoustics(track.id):
+                library.conclude_kept_prior(track.id)
+            elif result.seed_evidence:
                 library.set_analyzed_mood(
                     track.id,
                     result.valence,
@@ -255,10 +218,88 @@ def analyze_pending(
                     timbre_flag=result.timbre_flag,
                     timbre_source=result.timbre_source,
                     steer_weight=result.steer_weight,
+                    from_pcm=False,
                 )
-        except Exception:
-            library.mark_analyze_failed(track.id)
-            continue
+            else:
+                library.defer_analyze(track.id)
+        else:
+            library.set_analyzed_mood(
+                track.id,
+                result.valence,
+                result.energy,
+                result.bpm,
+                confidence=result.confidence,
+                low_trust=result.low_trust,
+                confidence_note=result.confidence_note,
+                onset_consistency=result.onset_consistency,
+                acoustic_flux=result.acoustic_flux,
+                brightness=result.brightness,
+                shape_note=result.shape_note,
+                timbre_flag=result.timbre_flag,
+                timbre_source=result.timbre_source,
+                steer_weight=result.steer_weight,
+            )
+    except Exception:
+        library.mark_analyze_failed(track_id)
+
+
+def analyze_pending(
+    library: Library,
+    *,
+    abort: AbortFn | None = None,
+    progress: AnalyzeProgressFn | None = None,
+    workers: int = 1,
+) -> None:
+    from meridian.features import clear_decode_abort
+
+    should_stop = abort or (lambda: False)
+    clear_decode_abort()
+    ids = library.unanalyzed_ids()
+    total = len(ids)
+    worker_count = max(1, min(int(workers or 1), 2))
+
+    if worker_count == 1 or total <= 1:
+        for index, track_id in enumerate(ids, start=1):
+            if should_stop():
+                break
+            track = library.get(track_id)
+            if not track:
+                continue
+            if progress:
+                progress(track.short_title, index, total)
+            _analyze_one_track(library, track_id)
+    else:
+        import threading
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        progress_lock = threading.Lock()
+        done = 0
+
+        def _job(track_id: int) -> None:
+            nonlocal done
+            if should_stop():
+                return
+            track = library.get(track_id)
+            title = track.short_title if track else str(track_id)
+            _analyze_one_track(library, track_id)
+            with progress_lock:
+                done += 1
+                if progress:
+                    progress(title, done, total)
+
+        with ThreadPoolExecutor(max_workers=worker_count) as pool:
+            futures = [pool.submit(_job, tid) for tid in ids]
+            for fut in as_completed(futures):
+                if should_stop():
+                    for pending in futures:
+                        pending.cancel()
+                    break
+                # Surface worker exceptions instead of hanging the job.
+                try:
+                    fut.result()
+                except Exception:
+                    pass
+
     if not should_stop():
         library.smooth_album_moods()
         library.smooth_artist_moods()

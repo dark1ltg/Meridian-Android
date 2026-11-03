@@ -10,6 +10,8 @@ data class MediaStoreTrack(
     /** Filesystem path if readable; otherwise a content://media URI. */
     val playPath: String,
     val title: String,
+    /** MediaStore DURATION in ms when known (0 if missing). */
+    val durationMs: Long = 0L,
 )
 
 /** MediaStore audio → folders for os.walk and/or content URI tracks. */
@@ -30,6 +32,7 @@ object MediaStoreMusic {
             MediaStore.Audio.Media.DISPLAY_NAME,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.DURATION,
         ).apply {
             if (Build.VERSION.SDK_INT >= 29) {
                 add(MediaStore.Audio.Media.RELATIVE_PATH)
@@ -51,6 +54,7 @@ object MediaStoreMusic {
                 val nameCol = cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
                 val titleCol = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
                 val volCol = cursor.getColumnIndex(MediaStore.Audio.Media.VOLUME_NAME)
+                val durCol = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION)
                 while (cursor.moveToNext() && out.size < max) {
                     val id = cursor.getLong(idCol)
                     val data = if (dataCol >= 0) cursor.getString(dataCol) else null
@@ -58,6 +62,7 @@ object MediaStoreMusic {
                     val name = if (nameCol >= 0) cursor.getString(nameCol) else null
                     val title = if (titleCol >= 0) cursor.getString(titleCol) else null
                     val volume = if (volCol >= 0) cursor.getString(volCol) else null
+                    val durationMs = if (durCol >= 0) cursor.getLong(durCol).coerceAtLeast(0L) else 0L
                     val guessed = resolvePath(data, volume, rel, name)
                     val file = guessed?.let { File(it) }
                     val playPath = if (file != null && file.isFile && file.canRead()) {
@@ -67,7 +72,7 @@ object MediaStoreMusic {
                     }
                     val label = (title ?: name ?: SafIngest.displayTitle(File(playPath).name))
                         .ifBlank { "Track" }
-                    out += MediaStoreTrack(playPath, SafIngest.displayTitle(label))
+                    out += MediaStoreTrack(playPath, SafIngest.displayTitle(label), durationMs)
                 }
             }
         } catch (_: SecurityException) {
