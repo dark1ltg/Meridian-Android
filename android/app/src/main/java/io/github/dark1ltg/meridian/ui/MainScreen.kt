@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,7 +76,11 @@ sealed class Overlay {
 }
 
 @Composable
-fun MainScreen(vm: SessionViewModel, ui: UiState) {
+fun MainScreen(
+    vm: SessionViewModel,
+    ui: UiState,
+    onLeaveApp: () -> Unit = {},
+) {
     MainScreen(
         ui = ui,
         onToggleSearch = { vm.toggleSearch(!ui.searchOpen) },
@@ -98,6 +103,7 @@ fun MainScreen(vm: SessionViewModel, ui: UiState) {
         onCancelJob = vm::cancelJob,
         onVolume = vm::setVolume,
         onIndexAll = vm::indexAllDeviceAudio,
+        onLeaveApp = onLeaveApp,
     )
 }
 
@@ -124,12 +130,24 @@ fun MainScreen(
     onCancelJob: () -> Unit = {},
     onVolume: (Float) -> Unit = {},
     onIndexAll: () -> Unit = {},
+    onLeaveApp: () -> Unit = {},
     initialTab: AppTab = AppTab.Map,
     initialOverlay: Overlay = Overlay.None,
 ) {
     var tab by remember { mutableStateOf(initialTab) }
     var overlay by remember { mutableStateOf(initialOverlay) }
     var toast by remember { mutableStateOf<String?>(null) }
+    val searchOpen = overlay is Overlay.Search || ui.searchOpen
+    BackHandler {
+        when {
+            overlay !is Overlay.None || searchOpen -> {
+                if (searchOpen) onToggleSearch()
+                overlay = Overlay.None
+            }
+            tab != AppTab.Map -> tab = AppTab.Map
+            else -> onLeaveApp()
+        }
+    }
     LaunchedEffect(toast) {
         if (toast != null) {
             delay(1400)

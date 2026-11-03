@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -52,6 +53,14 @@ class MainActivity : ComponentActivity() {
     private var pendingFolders: FolderChoice? = null
     private var revealUi by mutableStateOf(false)
     private var promptingUnlock = false
+
+    companion object {
+        private const val STATE_GATE = "meridian_gate"
+
+        /** Splash is a cold-start intro only — skip it after the first advance in this process. */
+        @Volatile
+        private var splashDoneThisProcess = false
+    }
 
     private val pickTree = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree(),
@@ -105,6 +114,17 @@ class MainActivity : ComponentActivity() {
         refuseLockscreenOcclusion()
         enableEdgeToEdge()
         val prefs = getSharedPreferences("meridian", Context.MODE_PRIVATE)
+        gate = initialGate(prefs, savedInstanceState)
+        // Root back backgrounds the task instead of finishing — otherwise
+        // overview relaunch recreates MainActivity and replayed the splash.
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    moveTaskToBack(true)
+                }
+            },
+        )
         vm.onPickFolder = { pickTree.launch(null) }
         if (hasAudioPermission()) vm.boot()
         maybeRequestNotificationPermission()
@@ -163,12 +183,21 @@ class MainActivity : ComponentActivity() {
                         )
                         Gate.App -> {
                             val ui by vm.state.collectAsState()
-                            MainScreen(vm, ui)
+                            MainScreen(
+                                vm = vm,
+                                ui = ui,
+                                onLeaveApp = { moveTaskToBack(true) },
+                            )
                         }
                     }
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_GATE, gate.name)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -183,8 +212,36 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        unregisterReceiver(unlockReceiver)
+        try {
+            unregisterReceiver(unlockReceiver)
+        } catch (_: IllegalArgumentException) {
+        }
         super.onDestroy()
+    }
+
+    private fun initialGate(
+        prefs: android.content.SharedPreferences,
+        savedInstanceState: Bundle?,
+    ): Gate {
+        val restored = savedInstanceState?.getString(STATE_GATE)?.let { name ->
+            runCatching { Gate.valueOf(name) }.getOrNull()
+        }
+        if (restored != null && restored != Gate.Splash) {
+            splashDoneThisProcess = true
+            return restored
+        }
+        // Already past splash in this process (activity recreated after finish /
+        // overview reopen) — jump straight back into the app.
+        if (splashDoneThisProcess) {
+            return postSplashGate(prefs)
+        }
+        return Gate.Splash
+    }
+
+    private fun postSplashGate(prefs: android.content.SharedPreferences): Gate = when {
+        !prefs.getBoolean("onboarded", false) -> Gate.Onboarding
+        !hasAudioPermission() && !prefs.getBoolean("permission_prompt_done", false) -> Gate.Permission
+        else -> Gate.App
     }
 
     private fun keyguard(): KeyguardManager =
@@ -272,11 +329,8 @@ class MainActivity : ComponentActivity() {
         // now), do not re-show it every cold start — even if they denied the
         // system dialog. They can still grant access from system Settings and
         // add folders via SAF.
-        gate = when {
-            !prefs.getBoolean("onboarded", false) -> Gate.Onboarding
-            !hasAudioPermission() && !prefs.getBoolean("permission_prompt_done", false) -> Gate.Permission
-            else -> Gate.App
-        }
+        splashDoneThisProcess = true
+        gate = postSplashGate(prefs)
     }
 
     private fun applyFolders(choice: FolderChoice?) {

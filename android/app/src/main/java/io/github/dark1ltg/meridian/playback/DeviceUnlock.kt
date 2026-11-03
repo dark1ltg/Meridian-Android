@@ -18,9 +18,11 @@ object DeviceUnlock {
 
     fun sessionActivityIntent(context: Context): Intent {
         return Intent(context, MainActivity::class.java).apply {
+            // Reorder the existing task — avoid CLEAR_TOP recreating MainActivity
+            // and replaying splash when opening from the media notification.
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                Intent.FLAG_ACTIVITY_CLEAR_TOP
+                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             putExtra(EXTRA_FROM_MEDIA_CONTROLS, true)
         }
     }
