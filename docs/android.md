@@ -11,7 +11,7 @@ Playback uses AndroidX **Media3 / ExoPlayer**. The engine is CPython 3.12 via **
 - Bottom navigation: Map, Queue, Context (listen matrix on the night sky), More (folders, Listen primary, Scan / Rescan under Advanced, Allow music access)
 - Onboarding, music-folder permission (recoverable from Settings), now playing (love + volume), and engine-backed “why this track”
 - Play Context starts the neighborhood queue from the lens
-- **Renew** on Queue / Context rebuilds the context queue from the current listen matrix (desktop Renew Queue: not shuffle, not skips; what’s playing stays). Aiming the lens updates the matrix without replacing the live queue
+- **Renew** on Queue / Context rebuilds the context queue from the current listen matrix (desktop Renew Queue: not shuffle, not skips; what’s playing stays up front). Aiming the lens updates the matrix without replacing the live queue; **Play Context** syncs a stale queue to the lens; Queue / Context show a stale hint until then
 - Modes: Focus, Wander, Charge, Dim (mode chip in the top bar; also under More → Audio)
 - Debounced search, love, skip / previous
 - Add extra folders with the system directory picker (SAF). Meridian keeps a persistable read grant for each tree, indexes via `DocumentFile` (filesystem walk when Android exposes a listable `/storage/…` path, otherwise `content:` URI tracks), and Remove drops the folder row, its tracks, and the grant. **Index all audio on this phone** pulls directories from the system music catalog (MediaStore).
@@ -34,14 +34,14 @@ bash android/scripts/build-media3-ffmpeg.sh
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-03, **versionCode 142**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 143**).
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
-| **APK SHA-256** | `fa14b26121e9536b871d2fe03177f60ebecaff6869f56d256eaef19f8c154bcc` |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB) |
-| **Source SHA-256** | `2ab567f28ee2b6de0c184971cf0b441367555a4fd67c5047a6b7fcc4ee78b78a` |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) |
+| **APK SHA-256** | see release `.sha256` (versionCode 143) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see release `.sha256` |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 

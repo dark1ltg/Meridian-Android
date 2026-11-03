@@ -40,6 +40,8 @@ fun QueueScreen(
     tracks: List<TrackRow>,
     currentId: Int?,
     queueIndex: Int,
+    queueStale: Boolean = false,
+    renewEnabled: Boolean = true,
     onPlay: (Int) -> Unit,
     onLove: (Int) -> Unit,
     onOpenWhy: (Int) -> Unit,
@@ -61,12 +63,15 @@ fun QueueScreen(
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    "From lens · clock · matrix",
+                    when {
+                        queueStale -> "Lens moved · Renew or Play Context to sync"
+                        else -> "From lens · clock · matrix"
+                    },
                     color = Mute,
                     fontSize = 12.sp,
                 )
             }
-            RenewQueueButton(onRenewQueue = onRenewQueue)
+            RenewQueueButton(onRenewQueue = onRenewQueue, enabled = renewEnabled)
         }
         if (tracks.isEmpty()) {
             Text(
