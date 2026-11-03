@@ -1,4 +1,4 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-02**, **versionCode 138**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-02**, **versionCode 139**).
 
 ## Downloads
 
@@ -16,6 +16,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 
 ## What’s in this build
 - **Folders** — Add folder uses SAF + persistable grants; Remove drops the folder, tracks, and grant; music/notification permission prompts at most once
+- **Auto Listen** — after you allow file access (or Scan / Add folder / Index all), Meridian scans then starts waveform Listen automatically
 - **Back / overview** — Back backgrounds the app instead of finishing it; overview resume skips the splash replay
 - **Scan progress** — live filename plus **N of total** (and Listen) in the job strip
 - **Listen 1.3.6** — intro/mid/late analysis, loudness-normalized Glow/Kinetic, placement honesty, shape/timbre/steer, kept-prior conclude
@@ -25,7 +26,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 - Native **aubio** + Media3 **FFmpeg JNI** (`libffmpegJNI.so`) for Listen/playback fallback
 
 ## Notes
-- Minimum **Android 8.0 (API 26)**; **versionCode 138** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 139** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

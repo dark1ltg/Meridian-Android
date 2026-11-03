@@ -203,11 +203,30 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun scan() = heavy("scan") { JSONObject() }
+    /** Scan then Listen — matches desktop: import tags, then waveform mood. */
+    fun scan() = scanThenListen()
 
     fun analyze() = heavy("analyze") { JSONObject() }
 
     fun rescan() = heavy("rescan") { JSONObject() }
+
+    private fun scanThenListen() {
+        work?.cancel()
+        work = viewModelScope.launch {
+            ensureBoot()
+            _state.update { it.copy(busy = true, message = "Scanning…") }
+            try {
+                val scanned = runEngineJob("scan", JSONObject())
+                applySnap(scanned)
+                if (!scanned.ok) return@launch
+                _state.update { it.copy(busy = true, message = "Listening…") }
+                val listened = runEngineJob("analyze", JSONObject())
+                applySnap(listened)
+            } finally {
+                _state.update { it.copy(busy = false, job = JobProgress()) }
+            }
+        }
+    }
 
     fun cancelJob() {
         viewModelScope.launch(Dispatchers.IO) { engine.abort() }
@@ -288,6 +307,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                         _state.update { it.copy(message = "Scanning…") }
                         val scanned = runEngineJob("scan", JSONObject())
                         applySnap(scanned)
+                        if (!scanned.ok) return@launch
                     }
                 }
                 if (uriTracks.isNotEmpty()) {
@@ -299,7 +319,13 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                         )
                     }
                     applySnap(uris)
+                    if (!uris.ok) return@launch
                 }
+                // Desktop starts waveform Listen immediately after a successful
+                // scan/import — without this, permission grant only tags files.
+                _state.update { it.copy(message = "Listening…") }
+                val listened = runEngineJob("analyze", JSONObject())
+                applySnap(listened)
             } finally {
                 _state.update { it.copy(busy = false, job = JobProgress()) }
             }

@@ -16,6 +16,7 @@ Playback uses AndroidX **Media3 / ExoPlayer**. The engine is CPython 3.12 via **
 - Add extra folders with the system directory picker (SAF). Meridian keeps a persistable read grant for each tree, indexes via `DocumentFile` (filesystem walk when Android exposes a listable `/storage/…` path, otherwise `content:` URI tracks), and Remove drops the folder row, its tracks, and the grant. **Index all audio on this phone** pulls directories from the system music catalog (MediaStore).
 
 - Scan and Listen report the current filename plus **N of total** (determinate bar) once per surface and can be cancelled
+- After you allow music access on the permission screen (or tap Scan / Add folder / Index all), Meridian **scans then starts Listen** automatically — tags first, then waveform mood analysis
 - Root **Back** backgrounds the task (`moveTaskToBack`); overlays and non-Map tabs unwind first. Returning from overview does not replay the cold-start splash. Music-access and notification prompts are asked at most once each.
 - **Lockscreen / background playback** — a foreground `MediaSessionService` keeps audio going when the screen is locked or you switch apps. Notification and lockscreen show title, artist, play/pause, skip, and previous (no album art). Skip/previous still go through the context queue. Opening Meridian from those controls still requires the device lock (PIN, password, pattern, biometric, or face — whatever the phone uses). The app itself is never drawn over a locked keyguard.
 - **Crossfade** — two ExoPlayer decks overlap for ~3 seconds (InOutQuad), the same always-on rule as desktop. Skip, pause, and seek cut the fade short. Natural advance starts about a fade-length before the end of a long track.
@@ -31,7 +32,7 @@ bash android/scripts/build-media3-ffmpeg.sh
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 138**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 139**).
 
 | Asset | |
 |---|---|
