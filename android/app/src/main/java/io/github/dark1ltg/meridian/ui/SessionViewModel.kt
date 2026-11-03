@@ -17,6 +17,7 @@ import io.github.dark1ltg.meridian.data.emptySnapshot
 import io.github.dark1ltg.meridian.playback.LocalPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +59,10 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     private var work: Job? = null
     private var lensFlush: Job? = null
     private var searchJob: Job? = null
+    private var playJob: Job? = null
+    private var playGeneration = 0
+    /** Serializes engine.play so a cancelled older tap cannot finish after a newer one. */
+    private val playGate = Any()
     private var pendingLens: Triple<Float, Float, Float>? = null
     private val bootMutex = Mutex()
     private var booted = false
@@ -163,62 +168,55 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun play(id: Int) {
         val local = findTrack(id)
-        viewModelScope.launch {
+        // Single-flight: a newer tap cancels an in-flight older play.
+        val gen = ++playGeneration
+        playJob?.cancel()
+        playJob = viewModelScope.launch {
             ensureBoot()
-            // Start audio ASAP from the cached row; sync engine in parallel.
-            if (local != null) {
-                val reachable = withContext(Dispatchers.IO) {
-                    PathProbe(getApplication()).reachable(local.path)
+            if (gen != playGeneration) return@launch
+            // Capture position before any deck swap so skip/hate credit is accurate.
+            val positionMs = _clock.value.positionMs
+            // Arm engine.play before setMediaItem so hardCut → fade_settled sees pending credit.
+            // NonCancellable + playGate: cancelled older IO cannot commit after a newer tap.
+            val snap = withContext(Dispatchers.IO + NonCancellable) {
+                synchronized(playGate) {
+                    if (gen != playGeneration) return@withContext null
+                    engine.call(
+                        "play",
+                        JSONObject().put("id", id).put("position_ms", positionMs),
+                    )
                 }
-                if (reachable) {
-                    player.play(local)
-                }
-            }
-            val snap = withContext(Dispatchers.IO) {
-                engine.call(
-                    "play",
-                    JSONObject().put("id", id).put("position_ms", _clock.value.positionMs),
-                )
-            }
+            } ?: return@launch
+            if (gen != playGeneration) return@launch
             applySnap(snap)
             val track = snap.current ?: return@launch
-            if (local == null || track.id != local.id || track.path != local.path) {
-                val reachable = withContext(Dispatchers.IO) {
-                    PathProbe(getApplication()).reachable(track.path)
-                }
-                if (!reachable) {
-                    _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
-                    val next = withContext(Dispatchers.IO) {
-                        engine.call("playback_failed", JSONObject().put("id", track.id))
-                    }
-                    applySnap(next)
-                    next.current?.let { cand ->
-                        val ok = withContext(Dispatchers.IO) {
-                            PathProbe(getApplication()).reachable(cand.path)
-                        }
-                        if (ok) player.play(cand)
-                    }
-                    return@launch
-                }
-                player.play(track)
-            } else if (local != null) {
-                val reachable = withContext(Dispatchers.IO) {
-                    PathProbe(getApplication()).reachable(local.path)
-                }
-                if (!reachable) {
-                    _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
-                    val next = withContext(Dispatchers.IO) {
-                        engine.call("playback_failed", JSONObject().put("id", local.id))
-                    }
-                    applySnap(next)
-                    next.current?.let { cand ->
-                        val ok = withContext(Dispatchers.IO) {
-                            PathProbe(getApplication()).reachable(cand.path)
-                        }
-                        if (ok) player.play(cand)
-                    }
-                }
+            val toPlay = when {
+                local != null && track.id == local.id && track.path == local.path -> local
+                else -> track
             }
+            val reachable = withContext(Dispatchers.IO) {
+                PathProbe(getApplication()).reachable(toPlay.path)
+            }
+            if (gen != playGeneration) return@launch
+            if (!reachable) {
+                _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
+                val next = withContext(Dispatchers.IO + NonCancellable) {
+                    synchronized(playGate) {
+                        if (gen != playGeneration) return@withContext null
+                        engine.call("playback_failed", JSONObject().put("id", toPlay.id))
+                    }
+                } ?: return@launch
+                if (gen != playGeneration) return@launch
+                applySnap(next)
+                next.current?.let { cand ->
+                    val ok = withContext(Dispatchers.IO) {
+                        PathProbe(getApplication()).reachable(cand.path)
+                    }
+                    if (gen == playGeneration && ok) player.play(cand)
+                }
+                return@launch
+            }
+            player.play(toPlay)
         }
     }
 
@@ -298,20 +296,30 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Apply any debounced lens move before queue work so Renew/Play Context match the map. */
+    /**
+     * Apply any debounced lens move before queue work so Renew/Play Context match the map.
+     * Cancels an in-flight flush and pushes the latest coords so a mid-call null does not
+     * drop a newer aim.
+     */
     private suspend fun flushPendingLens() {
-        val next = pendingLens ?: return
-        pendingLens = null
-        val snap = withContext(Dispatchers.IO) {
-            engine.call(
-                "set_lens",
-                JSONObject()
-                    .put("x", next.first.toDouble())
-                    .put("y", next.second.toDouble())
-                    .put("radius", next.third.toDouble()),
-            )
+        lensFlush?.cancel()
+        lensFlush = null
+        // Loop until stable: a setLens during the IO call may refill pendingLens.
+        while (true) {
+            val next = pendingLens ?: return
+            pendingLens = null
+            val snap = withContext(Dispatchers.IO) {
+                engine.call(
+                    "set_lens",
+                    JSONObject()
+                        .put("x", next.first.toDouble())
+                        .put("y", next.second.toDouble())
+                        .put("radius", next.third.toDouble()),
+                )
+            }
+            applySnap(snap)
+            if (pendingLens == null) return
         }
-        applySnap(snap)
     }
 
     fun togglePlay() {

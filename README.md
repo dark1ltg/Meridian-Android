@@ -10,12 +10,12 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 
 ## Download
 
-Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 149**):
+Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 150**):
 
-- **APK:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB, arm64-v8a; aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **APK SHA-256:** `ee42195e71d9cc6af2924cfa57a384a205fd7684fd768c1173bc42e90d9ea182` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256))
-- **Source:** [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB; full tree at the release commit)
-- **Source SHA-256:** `113277b7b56b302ff2b60dd34a671bf2eebe361454d6f2caefd46ca40c589117` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256))
+- **APK:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (arm64-v8a; aubio + Media3 FFmpeg JNI + meridian_pcm)
+- **APK SHA-256:** see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 150)
+- **Source:** [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz)
+- **Source SHA-256:** see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)
 
 ```bash
 # verify, then install

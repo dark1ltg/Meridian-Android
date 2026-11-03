@@ -5,7 +5,7 @@ Extra guides for how Meridian listens to your files and puts them on the mood ma
 The [main README](../README.md) is the short “what is this / how do I run it” page.  
 Release history is in [CHANGELOG.md](../CHANGELOG.md).
 
-**Android APK + source** (this tree): [Meridian-Android releases](https://github.com/dark1ltg/Meridian-Android/releases) — current **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (versionCode **149**, published 2026-11-03).  
+**Android APK + source** (this tree): [Meridian-Android releases](https://github.com/dark1ltg/Meridian-Android/releases) — current **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (versionCode **150**, published 2026-11-03).  
 **Linux AppImage** (desktop tree): [Meridian releases](https://github.com/dark1ltg/Meridian/releases).
 
 ## System requirements (Android release APK)
@@ -15,8 +15,8 @@ Release history is in [CHANGELOG.md](../CHANGELOG.md).
 | **OS** | Android **8.0+** (API 26) |
 | **CPU** | **arm64-v8a** (Unihertz Titan 2, Pixel, and most current phones) |
 | **Install** | Sideload [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (`adb install -r` or open the file) |
-| **APK checksum** | SHA-256 `ee42195e71d9cc6af2924cfa57a384a205fd7684fd768c1173bc42e90d9ea182` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB; SHA-256 `113277b7b56b302ff2b60dd34a671bf2eebe361454d6f2caefd46ca40c589117`) |
+| **APK checksum** | see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 150) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (see release `.sha256`) |
 | **Signature** | Public sideload key in `android/keystore/` (not Play Store); cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9` |
 
 ## System requirements (release AppImage)

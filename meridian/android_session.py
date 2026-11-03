@@ -556,6 +556,9 @@ class AndroidSession:
                 self.status = "Listen stopped"
             else:
                 self.status = "Mood listen finished · context queue refreshed"
+            # Analyze writes new moods into SQLite; drop the cached Track rows so
+            # the map/queue show Listen results instead of pre-Listen guesses.
+            self._invalidate_playable_cache()
             self._rebuild_queue(keep_current=True)
         finally:
             self._end_job()
@@ -699,9 +702,12 @@ class AndroidSession:
             return self._advance_queue(record_next=True)
         current = self._current_track()
         if current:
-            lib.record_skip(current.id)
-            self._listen_nudge(current.id, skipped=True)
-            self.skip_pressure = min(1.0, self.skip_pressure + 0.22)
+            # Same 8s rule as fade-interrupt / desktop — a long listen is not a skip.
+            skipped = int(position_ms or 0) < 8000
+            if skipped:
+                lib.record_skip(current.id)
+                self.skip_pressure = min(1.0, self.skip_pressure + 0.22)
+            self._listen_nudge(current.id, skipped=skipped)
             self._save_ui_state()
         return self._advance_queue(record_next=True)
 

@@ -9,8 +9,7 @@ object MapLod {
     /** Dig into dense clusters without leaving the map shell. */
     const val ZOOM_MAX = 5f
     const val LABEL_START = 1.55f
-    const val BLOOM_START = 1.28f
-    /** Past this, bloom only NOW/DEEP/selected — fill cost stays low at deep dig-in. */
+    /** Past this, bloom only selected — fill/shelf stay plain for dense dig-in. */
     const val DEEP_ZOOM = 3.2f
     const val CHROME_START = 1.0f
     const val CHROME_END = 2.4f
@@ -61,20 +60,22 @@ object MapLod {
     fun maxLabels(zoom: Float): Int = if (zoom >= DEEP_ZOOM) MAX_LABELS_DEEP else MAX_LABELS
 
     /**
-     * Bloom is expensive and washes dense clusters. Mid-zoom: NOW/DEEP or all past
-     * [BLOOM_START]. Deep dig-in: selected only — plain cores + collision labels win.
+     * Bloom is expensive and washes dense clusters. Prefer NOW/DEEP (and selected);
+     * never bloom everything mid-zoom. Deep dig-in: selected only.
      */
     fun shouldBloom(zoom: Float, quadrant: String, selected: Boolean): Boolean {
         if (selected) return true
         if (zoom >= DEEP_ZOOM) return false
-        if (zoom >= BLOOM_START) return true
         return quadrant == "now" || quadrant == "deep"
     }
 
-    /** Approximate label box for collision (Compose canvas text, ~Ubuntu Sans). */
-    const val LABEL_CHAR_W = 7.2f
-    const val LABEL_LINE_H = 16f
+    /** Approximate label box for collision (Compose canvas text, ~26sp Ubuntu Sans). */
+    const val LABEL_CHAR_W = 14f
+    const val LABEL_LINE_H = 28f
     const val LABEL_PAD = 4f
+
+    /** Dig-in hit/grab radius must not grow past this fraction of the short edge. */
+    const val LENS_HIT_CAP = 0.48f
 
     fun onScreen(x: Float, y: Float, w: Float, h: Float, pad: Float = CULL_PAD): Boolean {
         return x >= -pad && y >= -pad && x <= w + pad && y <= h + pad

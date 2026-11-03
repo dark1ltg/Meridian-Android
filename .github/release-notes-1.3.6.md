@@ -1,13 +1,13 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-03**, **versionCode 149**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-03**, **versionCode 150**).
 
 ## Downloads
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — ~36.2 MB, arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | `ee42195e71d9cc6af2924cfa57a384a205fd7684fd768c1173bc42e90d9ea182` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — ~0.4 MB, full tree at this release commit |
-| **Source SHA-256** | `113277b7b56b302ff2b60dd34a671bf2eebe361454d6f2caefd46ca40c589117` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
+| **APK SHA-256** | see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 150) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
@@ -15,6 +15,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 ```
 
 ## What’s in this build
+- **Stability** — Listen refreshes map moods; empty-sky import when audio is already allowed; play credit / Previous after pause; skip after a long listen is not hate; dig-in lens hit capped; tap-to-play single-flight + advance epoch; Renew/Play Context flush latest lens; denser label boxes, hover clear, mid-zoom bloom trim, pinch lock, two-finger pan
 - **Dense clusters** — collision-aware star titles (stagger or drop overlaps); deep dig-in drops non-selected bloom and eases glow so packed neighborhoods stay readable
 - **Map dig-in** — pinch outside the lens zooms toward your fingers up to ~5×; LOD keeps bloom/labels/galaxy wash light for smooth aiming on Titan-class screens
 - **Lens** — press on/near the ring aims the lens (stars no longer steal the drag); pinch can shrink to a tighter ~0.05 neighborhood for dense clusters
@@ -37,7 +38,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 - Native **aubio** + Media3 **FFmpeg JNI** (`libffmpegJNI.so`) for Listen/playback fallback
 
 ## Notes
-- Minimum **Android 8.0 (API 26)**; **versionCode 149** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 150** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

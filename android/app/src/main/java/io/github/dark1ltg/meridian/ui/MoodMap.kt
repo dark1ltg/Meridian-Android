@@ -174,7 +174,7 @@ fun MoodMap(
                         latestOnHover.value(hover!!.second)
                     }
                     val lensPx = moodToPx(aim.x, aim.y, w, h, localPan, localZoom)
-                    val rr = aim.radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX) * min(w, h) * localZoom
+                    val rr = lensHitRadiusPx(aim.radius, w, h, localZoom)
                     val nearLens = hypot(
                         (down.position.x - lensPx.x).toDouble(),
                         (down.position.y - lensPx.y).toDouble(),
@@ -184,6 +184,8 @@ fun MoodMap(
                     var moved = false
                     var travel = 0f
                     var aimed = false
+                    // Lock first multi-touch decision so pinch doesn't flip resize↔zoom mid-gesture.
+                    var pinchMode: PinchMode? = null
                     val pinSlop = 18f
                     try {
                         do {
@@ -193,33 +195,48 @@ fun MoodMap(
                             val panChange = event.calculatePan()
                             val centroid = event.calculateCentroid(useCurrent = true)
                             val liveLens = moodToPx(aim.x, aim.y, w, h, localPan, localZoom)
-                            val liveRr = aim.radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX) * min(w, h) * localZoom
-                            if (pressed.size >= 2 && zoomChange != 1f) {
+                            val liveRr = lensHitRadiusPx(aim.radius, w, h, localZoom)
+                            if (pressed.size >= 2) {
                                 pinId = null
-                                val inside = hypot(
-                                    (centroid.x - liveLens.x).toDouble(),
-                                    (centroid.y - liveLens.y).toDouble(),
-                                ) <= liveRr * 1.08
-                                if (inside || compact) {
-                                    aim.dragging = true
-                                    aim.resizeBy(zoomChange)
-                                    aimed = true
-                                    scheduleLensCommit()
-                                } else {
-                                    val nextZoom = MapLod.clampZoom(localZoom * zoomChange)
-                                    if (nextZoom != localZoom) {
-                                        localPan = panAfterZoom(
-                                            focus = centroid,
-                                            w = w,
-                                            h = h,
-                                            pan = localPan,
-                                            oldZoom = localZoom,
-                                            newZoom = nextZoom,
-                                        )
-                                        pan = localPan
-                                        localZoom = nextZoom
-                                        zoom = localZoom
+                                if (zoomChange != 1f) {
+                                    if (pinchMode == null) {
+                                        val inside = hypot(
+                                            (centroid.x - liveLens.x).toDouble(),
+                                            (centroid.y - liveLens.y).toDouble(),
+                                        ) <= liveRr * 1.08
+                                        pinchMode = if (inside || compact) PinchMode.Resize else PinchMode.Zoom
                                     }
+                                    when (pinchMode) {
+                                        PinchMode.Resize -> {
+                                            aim.dragging = true
+                                            aim.resizeBy(zoomChange)
+                                            aimed = true
+                                            scheduleLensCommit()
+                                        }
+                                        PinchMode.Zoom, null -> {
+                                            val nextZoom = MapLod.clampZoom(localZoom * zoomChange)
+                                            if (nextZoom != localZoom) {
+                                                localPan = panAfterZoom(
+                                                    focus = centroid,
+                                                    w = w,
+                                                    h = h,
+                                                    pan = localPan,
+                                                    oldZoom = localZoom,
+                                                    newZoom = nextZoom,
+                                                )
+                                                pan = localPan
+                                                localZoom = nextZoom
+                                                zoom = localZoom
+                                            }
+                                        }
+                                    }
+                                } else if (panChange.x != 0f || panChange.y != 0f) {
+                                    // Two-finger pan when scale is idle.
+                                    localPan = Offset(
+                                        localPan.x - panChange.x / localZoom,
+                                        localPan.y - panChange.y / localZoom,
+                                    )
+                                    pan = localPan
                                 }
                                 pressed.forEach { if (it.positionChanged()) it.consume() }
                                 moved = true
@@ -263,6 +280,8 @@ fun MoodMap(
                     } finally {
                         if (aimed) commitLens()
                         aim.dragging = false
+                        hover = null
+                        latestOnHover.value("")
                     }
                     if (pinId != null && moved) {
                         latestOnPin.value(pinId, lastPin.first, lastPin.second)
@@ -366,7 +385,8 @@ private fun LensChromeLayer(
         val w = size.width
         val h = size.height
         val lens = moodToPx(aim.x, aim.y, w, h, pan, zoom)
-        val rr = aim.radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX) * min(w, h) * zoom
+        // Visual ring matches capped hit size so dig-in doesn't cover the viewport.
+        val rr = lensHitRadiusPx(aim.radius, w, h, zoom)
         val chrome = MapLod.chromeAlpha(zoom)
         shadePath.rewind()
         shadePath.fillType = PathFillType.EvenOdd
@@ -534,3 +554,12 @@ internal fun shouldHitTestStars(aimingLens: Boolean, pinning: Boolean): Boolean 
 internal fun shouldLatchStarPin(nearLens: Boolean, hasStar: Boolean): Boolean {
     return hasStar && !nearLens
 }
+
+/** Screen-px lens hit/draw radius — grows with zoom but capped so dig-in stays usable. */
+internal fun lensHitRadiusPx(radius: Float, w: Float, h: Float, zoom: Float): Float {
+    val minDim = min(w, h)
+    val raw = radius.coerceIn(LENS_RADIUS_MIN, LENS_RADIUS_MAX) * minDim * zoom
+    return min(raw, MapLod.LENS_HIT_CAP * minDim)
+}
+
+private enum class PinchMode { Resize, Zoom }
