@@ -10,7 +10,7 @@ This repository is the Android tree: Kotlin / Jetpack Compose UI, Media3 playbac
 
 ## Download
 
-Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 138**):
+Get **Meridian 1.3.6** for Android from this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 139**):
 
 - **APK:** [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~35.3 MB, arm64-v8a; aubio + Media3 FFmpeg JNI)
 - **APK SHA-256:** `8f693f3a09625062d998f32f46684ab5da330a7cf8403a291d25a85134526713` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256))
@@ -31,7 +31,7 @@ On the phone: open the APK, allow install from that source if asked. Needs **And
 - **Empty library** — Index / Folder / Scan / Listen actions on the map when nothing is indexed yet
 - **Listen matrix** — Context tab is matrix-only on the night sky (NOW / DEEP / FILL / SHELF)
 - **Context queue** — replenishes from the lens, time of day, and listening mode (Focus, Wander, Charge, Dim)
-- **Library** — add a real directory via the system picker (SAF grant kept across restarts; Remove drops folder, tracks, and grant); Listen is the primary library verb (Scan / Rescan under Advanced); Scan/Listen show the current filename and **N of total** and can be cancelled
+- **Library** — add a real directory via the system picker (SAF grant kept across restarts; Remove drops folder, tracks, and grant); after you allow access (or Scan / Add folder / Index all), Meridian **scans then Listen**s automatically; Scan/Listen show the current filename and **N of total** and can be cancelled
 - **Back** — leaves Meridian in overview without replaying splash on return
 - **Honest why** — queue reasons use fit, importance, love, pins, play/skip counts, clock band, and mode
 - **Background playback** — lockscreen and notification controls; audio keeps going when you switch apps

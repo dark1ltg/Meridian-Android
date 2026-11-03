@@ -7,7 +7,7 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-02
 
-Published on this repo’s Releases page (**versionCode 138** / versionName 1.3.6):
+Published on this repo’s Releases page (**versionCode 139** / versionName 1.3.6):
 
 - **`Meridian-1.3.6-arm64.apk`** (~35.3 MB; SHA-256 `8f693f3a09625062d998f32f46684ab5da330a7cf8403a291d25a85134526713`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI)
 - **`Meridian-1.3.6-src.tar.gz`** (~0.4 MB; SHA-256 `6cbe6c35c238cd9c00e4f8f80a3db3e7ccad6be27d42ac3fadddbf8b56627e6e`) — full tree at the release commit
@@ -15,6 +15,7 @@ Published on this repo’s Releases page (**versionCode 138** / versionName 1.3.
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
 - Settings Add folder uses SAF persistable grants (`DocumentFile` ingest); Remove clears the folder row, its tracks, and the URI grant; music/notification permission prompts at most once
+- After file access is granted (and after Scan / Add folder / Index all), Meridian automatically runs waveform **Listen** — same chain as desktop scan→analyze
 - Root Back backgrounds the task instead of finishing; overview resume skips splash; scan/Listen job strip shows the current filename plus **N of total**
 - Mood-map lens aims at pointer rate on Titan 2 class phones (1440×1440 @ 120 Hz): starfield stays put while the ring moves, HUD mood words update locally, and `set_lens` / queue rebuild wait for finger-up or 150 ms idle
 - Map HUD fades while aiming; empty library exposes Index / Folder / Scan / Listen on the map; mode chip in the top bar; pin/love flash confirmation; Listen is the primary library verb (Scan/Rescan under Advanced); Context is matrix-only on the night sky (no inset mini-map); job progress shows once per surface; search field is local-draft + debounced
