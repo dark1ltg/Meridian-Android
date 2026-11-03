@@ -37,10 +37,10 @@ Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Androi
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) |
-| **APK SHA-256** | see release `.sha256` (versionCode 140) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
-| **Source SHA-256** | see release `.sha256` |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~35.3 MB) |
+| **APK SHA-256** | `2059c23bc2bb42f21ad7dfc780310ba92480fc84084ebbb193278901b8bd33af` |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB) |
+| **Source SHA-256** | `756bd9d9b2b938f9619d30a2b9b860f1b5a8bd29431f49258a642f187bccec6c` |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` |
 
