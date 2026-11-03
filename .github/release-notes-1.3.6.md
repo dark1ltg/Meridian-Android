@@ -32,4 +32,3 @@ adb install -r Meridian-1.3.6-arm64.apk
 - GPL-3.0-only; source tarball matches the tagged tree (see also `SOURCE_OFFER.txt`)
 
 Linux AppImage stays on [dark1ltg/Meridian releases](https://github.com/dark1ltg/Meridian/releases).
-<!-- release trigger 2026-11-03T00:20:51Z -->
