@@ -35,14 +35,14 @@ bash android/scripts/build-media3-ffmpeg.sh
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 146**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-03, **versionCode 146**).
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk)  |
-| **APK SHA-256** | see release `.sha256` (versionCode 146) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz)  |
-| **Source SHA-256** | see release `.sha256` |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
+| **APK SHA-256** | `b6751f460341426482bc01690bae013654d16b53aa25ceb9347433958028e69b` |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB) |
+| **Source SHA-256** | `7a84d1e7c777ad81b0ae91947eead9b0196c196d4a6da91dfbd41b7fd898b6b3` |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 
