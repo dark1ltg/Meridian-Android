@@ -34,6 +34,20 @@ class MoodMapMathTest {
     }
 
     @Test
+    fun digInZoomKeepsFocusMoodUnderFingers() {
+        val w = 1440f
+        val h = 1440f
+        val pan = Offset(30f, -20f)
+        val oldZoom = 2f
+        val focus = moodToPx(0.55f, 0.42f, w, h, pan, oldZoom)
+        val newZoom = 5f
+        val nextPan = panAfterZoom(focus, w, h, pan, oldZoom, newZoom)
+        val after = moodToPx(0.55f, 0.42f, w, h, nextPan, newZoom)
+        assertEquals(focus.x, after.x, 1.5f)
+        assertEquals(focus.y, after.y, 1.5f)
+    }
+
+    @Test
     fun nearestPicksClosestStar() {
         val a = row(1, 0.2f, 0.8f)
         val b = row(2, 0.8f, 0.2f)

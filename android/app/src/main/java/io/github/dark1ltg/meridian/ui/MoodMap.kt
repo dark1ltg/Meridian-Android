@@ -110,7 +110,7 @@ fun MoodMap(
     val field = remember(fieldCount) { galaxyField(seed = 42, count = fieldCount) }
     val aim = lensAim ?: remember { LensAim(snapshot.lensX, snapshot.lensY, snapshot.lensRadius) }
     var pan by remember { mutableStateOf(Offset.Zero) }
-    var zoom by remember { mutableFloatStateOf(previewZoom.coerceIn(1f, 3.2f)) }
+    var zoom by remember { mutableFloatStateOf(MapLod.clampZoom(previewZoom)) }
     var hover by remember { mutableStateOf<Pair<Offset, String>?>(null) }
     val latestOnLens = rememberUpdatedState(onLens)
     val latestOnPlay = rememberUpdatedState(onPlay)
@@ -206,8 +206,20 @@ fun MoodMap(
                                     aimed = true
                                     scheduleLensCommit()
                                 } else {
-                                    localZoom = (localZoom * zoomChange).coerceIn(1f, 3.2f)
-                                    zoom = localZoom
+                                    val nextZoom = MapLod.clampZoom(localZoom * zoomChange)
+                                    if (nextZoom != localZoom) {
+                                        localPan = panAfterZoom(
+                                            focus = centroid,
+                                            w = w,
+                                            h = h,
+                                            pan = localPan,
+                                            oldZoom = localZoom,
+                                            newZoom = nextZoom,
+                                        )
+                                        pan = localPan
+                                        localZoom = nextZoom
+                                        zoom = localZoom
+                                    }
                                 }
                                 pressed.forEach { if (it.positionChanged()) it.consume() }
                                 moved = true
@@ -319,7 +331,7 @@ private fun StarFieldLayer(
                 "deep" -> 3.1f
                 "fill" -> 3.0f
                 else -> 2.7f
-            } * (0.85f + star.confidence.coerceIn(0.3f, 1f) * 0.35f) * (0.85f + zoom * 0.12f) * glow
+            } * (0.85f + star.confidence.coerceIn(0.3f, 1f) * 0.35f) * MapLod.starSizeScale(zoom) * glow
             if (MapLod.shouldBloom(zoom, star.quadrant, selected)) {
                 drawBloomStar(p, color, core, selected)
             } else {
@@ -333,7 +345,7 @@ private fun StarFieldLayer(
             val cx = w / 2f
             val cy = h / 2f
             labelCandidates.sortBy { hypot((it.first.x - cx).toDouble(), (it.first.y - cy).toDouble()) }
-            labelCandidates.take(MapLod.MAX_LABELS).forEach { (p, star) ->
+            labelCandidates.take(MapLod.maxLabels(zoom)).forEach { (p, star) ->
                 drawStarLabel(p, star.title, labelPaint)
             }
         }
@@ -412,6 +424,26 @@ internal fun screenToMood(
     val v = (worldX / w).coerceIn(0f, 1f)
     val e = (1f - worldY / h).coerceIn(0f, 1f)
     return v to e
+}
+
+/** Keep the mood under [focus] fixed while dig-in zoom changes (pinch toward fingers). */
+internal fun panAfterZoom(
+    focus: Offset,
+    w: Float,
+    h: Float,
+    pan: Offset,
+    oldZoom: Float,
+    newZoom: Float,
+): Offset {
+    if (oldZoom == newZoom || oldZoom == 0f || newZoom == 0f) return pan
+    val (v, e) = screenToMood(focus, w, h, pan, oldZoom)
+    val world = Offset(v * w, (1f - e) * h)
+    val cx = w / 2f
+    val cy = h / 2f
+    return Offset(
+        world.x - cx - (focus.x - cx) / newZoom,
+        world.y - cy - (focus.y - cy) / newZoom,
+    )
 }
 
 internal fun nearest(

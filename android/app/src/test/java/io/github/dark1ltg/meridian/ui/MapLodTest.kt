@@ -1,5 +1,6 @@
 package io.github.dark1ltg.meridian.ui
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,6 +10,28 @@ class MapLodTest {
     fun labelsAfterZoomIn() {
         assertFalse(MapLod.shouldLabel(1.2f))
         assertTrue(MapLod.shouldLabel(1.8f))
+    }
+
+    @Test
+    fun digInZoomCeiling() {
+        assertEquals(MapLod.ZOOM_MAX, MapLod.clampZoom(9f), 0.0001f)
+        assertEquals(MapLod.ZOOM_MIN, MapLod.clampZoom(0.2f), 0.0001f)
+        assertEquals(4.2f, MapLod.clampZoom(4.2f), 0.0001f)
+    }
+
+    @Test
+    fun deepZoomLimitsBloomAndAllowsMoreLabels() {
+        assertFalse(MapLod.shouldBloom(4.5f, "shelf", selected = false))
+        assertTrue(MapLod.shouldBloom(4.5f, "now", selected = false))
+        assertTrue(MapLod.shouldBloom(4.5f, "shelf", selected = true))
+        assertEquals(MapLod.MAX_LABELS_DEEP, MapLod.maxLabels(4f))
+        assertEquals(MapLod.MAX_LABELS, MapLod.maxLabels(2f))
+    }
+
+    @Test
+    fun starSizeCapsAtDeepZoom() {
+        assertTrue(MapLod.starSizeScale(MapLod.ZOOM_MAX) <= 1.35f + 0.001f)
+        assertTrue(MapLod.galaxyAlpha(MapLod.ZOOM_MAX) >= 0.22f)
     }
 
     @Test
