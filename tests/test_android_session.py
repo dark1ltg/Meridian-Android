@@ -370,20 +370,45 @@ def test_renew_queue_from_matrix_keeps_playing_and_lens_holds(tmp_path: Path) ->
     assert session.queue_ids
     assert session._current_track() is not None
     assert session._current_track().id == playing
+    # Playing track stays at the front — no stranded prefix.
+    assert session.queue_index == 0
+    assert session.queue_ids[0] == playing
     assert session._renew_streak == 1
+    assert snap["queue_stale"] is False
     # Second renew soft-demotes; streak advances.
     session.renew_queue()
     assert session._renew_streak == 2
     held = list(session.queue_ids)
+    # Sub-eps wobble must not zero the streak or mark stale.
+    session.set_lens(0.55 + 0.005, 0.55, 0.25)
+    assert list(session.queue_ids) == held
+    assert session._renew_streak == 2
+    assert session._queue_stale is False
     session.set_lens(0.9, 0.2, 0.2)
-    # Lens moves the matrix only — live context queue holds (desktop Renew Queue).
+    # Meaningful lens move holds the queue but marks it stale.
     assert list(session.queue_ids) == held
     assert session._renew_streak == 0
-    assert prior  # first renew ran against a non-empty context queue
+    assert session._queue_stale is True
+    assert prior
+    synced = session.play_context()
+    assert synced["queue_stale"] is False
+    assert session.queue_ids
+    # Pin holds the live queue (desktop parity).
+    before_pin = list(session.queue_ids)
+    session.pin(playing, 0.8, 0.8)
+    assert list(session.queue_ids) == before_pin
+    # Streak survives process-style reload via ui state.
+    session._renew_streak = 3
+    session._save_ui_state()
+    session2 = AndroidSession()
+    session2.initialize(str(tmp_path / "data"), str(music))
+    assert session2._renew_streak == 3
     from meridian.android_bridge import _METHODS
 
     assert "renew_queue" in _METHODS
+    assert "play_context" in _METHODS
     session.close()
+    session2.close()
 
 
 def test_analyze_pending_accepts_two_workers(tmp_path: Path) -> None:

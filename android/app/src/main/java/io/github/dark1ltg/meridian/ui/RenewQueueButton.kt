@@ -23,7 +23,10 @@ private const val RENEW_EXPLAINED = "renew_explained"
 
 /** Desktop-style Renew Queue control with a one-time explainer. */
 @Composable
-fun RenewQueueButton(onRenewQueue: () -> Unit) {
+fun RenewQueueButton(
+    onRenewQueue: () -> Unit,
+    enabled: Boolean = true,
+) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
     var showExplain by remember { mutableStateOf(false) }
@@ -39,7 +42,7 @@ fun RenewQueueButton(onRenewQueue: () -> Unit) {
                         "This is not shuffle, and it does not count replaced songs as skips. " +
                         "What’s already playing stays put.\n\n" +
                         "Moving the lens updates suggestions in the matrix; the queue itself " +
-                        "holds until it runs low or you Renew.",
+                        "holds until it runs low, you Play Context, or you Renew.",
                     color = Ink,
                     fontSize = 14.sp,
                 )
@@ -66,13 +69,19 @@ fun RenewQueueButton(onRenewQueue: () -> Unit) {
 
     TextButton(
         onClick = {
+            if (!enabled) return@TextButton
             if (prefs.getBoolean(RENEW_EXPLAINED, false)) {
                 onRenewQueue()
             } else {
                 showExplain = true
             }
         },
+        enabled = enabled,
     ) {
-        Text("Renew", color = Orange, fontWeight = FontWeight.SemiBold)
+        Text(
+            "Renew",
+            color = if (enabled) Orange else Mute,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }

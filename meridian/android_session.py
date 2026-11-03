@@ -32,6 +32,8 @@ from meridian.queue_engine import (
 from meridian.scan_core import analyze_pending, scan_library
 
 _STATE_NAME = "android_ui.json"
+# Mood-map units are 0–1; ignore sub-pixel lens jitter for streak / stale.
+_LENS_MOVE_EPS = 0.015
 _MAX_MAP_STARS = 1600
 _path_probe = None
 
@@ -150,8 +152,11 @@ class AndroidSession:
         self.search_query = ""
         self.status = ""
         self.played_history: list[int] = []
-        # Consecutive Renew Queue presses since last lens/mode change (capped in engine).
+        # Consecutive Renew Queue presses since last meaningful lens/mode change.
         self._renew_streak = 0
+        # Lens used to build the live context queue; moves mark the queue stale.
+        self._queue_lens: tuple[float, float, float] | None = None
+        self._queue_stale = False
         self._data_dir: Path | None = None
         self._abort = threading.Event()
         self._job_kind = ""
@@ -223,6 +228,13 @@ class AndroidSession:
             LENS_RADIUS_MIN, min(LENS_RADIUS_MAX, float(data.get("lens_radius", LENS_RADIUS_DEFAULT)))
         )
         self.skip_pressure = _clip01(data.get("skip_pressure", 0.0))
+        self._renew_streak = max(0, min(3, int(data.get("renew_streak", 0) or 0)))
+        ql = data.get("queue_lens")
+        if isinstance(ql, (list, tuple)) and len(ql) >= 3:
+            self._queue_lens = (_clip01(ql[0]), _clip01(ql[1]), float(ql[2]))
+        else:
+            self._queue_lens = (self.lens_x, self.lens_y, self.lens_radius)
+        self._queue_stale = bool(data.get("queue_stale", False))
 
     def _save_ui_state(self) -> None:
         if self._data_dir is None:
@@ -233,21 +245,48 @@ class AndroidSession:
             "lens_y": self.lens_y,
             "lens_radius": self.lens_radius,
             "skip_pressure": self.skip_pressure,
+            "renew_streak": self._renew_streak,
+            "queue_stale": self._queue_stale,
+            "queue_lens": list(self._queue_lens)
+            if self._queue_lens is not None
+            else [self.lens_x, self.lens_y, self.lens_radius],
         }
         try:
             self._state_path().write_text(json.dumps(payload), encoding="utf-8")
         except OSError:
             pass
 
+    def _lens_delta(
+        self, other: tuple[float, float, float] | None
+    ) -> tuple[float, float, float]:
+        if other is None:
+            return (1.0, 1.0, 1.0)
+        return (
+            abs(self.lens_x - other[0]),
+            abs(self.lens_y - other[1]),
+            abs(self.lens_radius - other[2]),
+        )
+
+    def _lens_moved(self, other: tuple[float, float, float] | None) -> bool:
+        dx, dy, dr = self._lens_delta(other)
+        return dx > _LENS_MOVE_EPS or dy > _LENS_MOVE_EPS or dr > _LENS_MOVE_EPS
+
+    def _remember_queue_lens(self) -> None:
+        self._queue_lens = (self.lens_x, self.lens_y, self.lens_radius)
+        self._queue_stale = False
+
     def set_lens(self, x: float, y: float, radius: float | None = None) -> dict:
         self.lens_x = _clip01(x)
         self.lens_y = _clip01(y)
         if radius is not None:
             self.lens_radius = max(LENS_RADIUS_MIN, min(LENS_RADIUS_MAX, float(radius)))
-        self._save_ui_state()
         # Desktop: lens refreshes the matrix only. The context queue holds until
-        # it runs low or the user taps Renew Queue.
-        self._renew_streak = 0
+        # it runs low, Play Context syncs it, or the user taps Renew Queue.
+        # Ignore sub-eps jitter so renew streak survives tiny wobbles.
+        if self._lens_moved(self._queue_lens):
+            self._queue_stale = True
+            self._renew_streak = 0
+        self._save_ui_state()
         return self.snapshot()
 
     def set_mode(self, mode: str) -> dict:
@@ -258,13 +297,14 @@ class AndroidSession:
         self._save_ui_state()
         self._renew_streak = 0
         self._rebuild_queue(keep_current=True)
+        self.status = f"Mode {self.mode.value} · context queue refreshed"
         return self.snapshot()
 
     def renew_queue(self) -> dict:
         """Fresh context queue from the current listen matrix (desktop Renew Queue).
 
         Soft-demotes the previous queue via RenewalContext — not shuffle, not skips,
-        not library Rescan. Current track stays if still playable.
+        not library Rescan. Current track stays up front if still playable.
         """
         lib = self._require()
         tracks = self._playable_tracks()
@@ -275,6 +315,8 @@ class AndroidSession:
         if current_id is not None:
             exempt.add(current_id)
         hard = {t.id for t in lib.all_tracks() if lib.is_playback_denied(t.id)}
+        # Match normal rebuild / desktop replenish: soft-skip recent plays.
+        exclude = set(self.played_history[-24:])
         renewal = RenewalContext(
             prior_queue_ids=frozenset(prior),
             renew_streak=self._renew_streak,
@@ -286,6 +328,7 @@ class AndroidSession:
             self._context(),
             self.explicit_ids,
             length=18,
+            exclude_ids=exclude,
             hard_exclude_ids=hard,
             renewal=renewal,
         )
@@ -293,17 +336,22 @@ class AndroidSession:
         playable_ids = {t.id for t in tracks}
         if current_id and current_id not in hard and current_id in playable_ids:
             if current_id in order:
-                self.queue_index = order.index(current_id)
-            else:
-                # Keep playing even if Renew didn't re-pick it into the new list.
-                order.insert(0, current_id)
-                self.queue_index = 0
-            self.queue_ids = order
-        else:
-            self.queue_ids = order
-            self.queue_index = 0 if self.queue_ids else 0
+                order.remove(current_id)
+            # Keep playing at the front so earlier plan slots cannot strand.
+            order.insert(0, current_id)
+        self.queue_ids = order
+        self.queue_index = 0 if self.queue_ids else 0
         self._renew_streak = min(3, self._renew_streak + 1)
+        self._remember_queue_lens()
         self.status = "Context queue renewed from the current matrix."
+        self._save_ui_state()
+        return self.snapshot()
+
+    def play_context(self) -> dict:
+        """Sync the context queue to the current lens when stale, then ready to play."""
+        if self._queue_stale or not self.queue_ids:
+            self._rebuild_queue(keep_current=bool(self.queue_ids))
+            self.status = "Context queue synced to the lens."
         return self.snapshot()
 
     def add_folder(self, path: str) -> dict:
@@ -467,9 +515,10 @@ class AndroidSession:
                 abort=self._abort.is_set,
                 progress=self._on_scan_progress,
             )
-            self.status = (
-                "Scan stopped" if self._abort.is_set() else f"Indexed {added} new or changed files"
-            )
+            if self._abort.is_set():
+                self.status = "Scan stopped"
+            else:
+                self.status = f"Indexed {added} new or changed files · context queue refreshed"
             self._rebuild_queue(keep_current=True)
         finally:
             self._end_job()
@@ -487,7 +536,10 @@ class AndroidSession:
                 progress=self._on_listen_progress,
                 workers=2,
             )
-            self.status = "Listen stopped" if self._abort.is_set() else "Mood listen finished"
+            if self._abort.is_set():
+                self.status = "Listen stopped"
+            else:
+                self.status = "Mood listen finished · context queue refreshed"
             self._rebuild_queue(keep_current=True)
         finally:
             self._end_job()
@@ -513,11 +565,10 @@ class AndroidSession:
                     progress=self._on_listen_progress,
                     workers=2,
                 )
-            self.status = (
-                "Rescan stopped"
-                if self._abort.is_set()
-                else f"Rescan complete ({added} files refreshed)"
-            )
+            if self._abort.is_set():
+                self.status = "Rescan stopped"
+            else:
+                self.status = f"Rescan complete ({added} files refreshed) · context queue refreshed"
             self._rebuild_queue(keep_current=True)
         finally:
             self._end_job()
@@ -542,9 +593,9 @@ class AndroidSession:
             self._job_message = title
 
     def pin(self, track_id: int, valence: float, energy: float) -> dict:
+        # Desktop: pin refreshes the matrix only — hold the live context queue.
         self._require().set_mood(int(track_id), _clip01(valence), _clip01(energy), pinned=True)
         self.status = "Mood pinned"
-        self._rebuild_queue(keep_current=True)
         return self.snapshot()
 
     def love(self, track_id: int) -> dict:
@@ -820,6 +871,8 @@ class AndroidSession:
             order.insert(0, current_id)
         self.queue_ids = order
         self.queue_index = 0 if self.queue_ids else 0
+        self._remember_queue_lens()
+        self._save_ui_state()
 
     def _track_dict(
         self,
@@ -893,6 +946,7 @@ class AndroidSession:
             },
             "queue": queue,
             "queue_index": self.queue_index,
+            "queue_stale": self._queue_stale,
             "now": by_q[Quadrant.NOW.value],
             "deep": by_q[Quadrant.DEEP.value],
             "fill": by_q[Quadrant.FILL.value],

@@ -45,6 +45,7 @@ fun ContextScreen(
     onPlayContext: () -> Unit,
     onOpenWhy: (Int) -> Unit,
     onRenewQueue: () -> Unit = {},
+    renewEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val (glow, kinetic) = moodWord(snapshot.lensX, snapshot.lensY)
@@ -72,8 +73,16 @@ fun ContextScreen(
                 if (snapshot.mode.isNotBlank()) {
                     MoodChip(snapshot.mode.replaceFirstChar { it.titlecase() })
                 }
-                RenewQueueButton(onRenewQueue = onRenewQueue)
+                RenewQueueButton(onRenewQueue = onRenewQueue, enabled = renewEnabled)
             }
+        }
+        if (snapshot.queueStale) {
+            Text(
+                "Lens moved · Renew or Play Context to sync the queue",
+                color = Mute,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+            )
         }
         Row(
             Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),

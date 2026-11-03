@@ -181,17 +181,46 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun playContext() {
-        val snap = _state.value.snapshot
-        val start = snap.queue.getOrNull(snap.queueIndex)
-            ?: snap.queue.firstOrNull()
-            ?: snap.now.firstOrNull()
-            ?: snap.stars.firstOrNull()
-            ?: return
-        play(start.id)
+        viewModelScope.launch {
+            ensureBoot()
+            flushPendingLens()
+            val synced = withContext(Dispatchers.IO) { engine.call("play_context") }
+            applySnap(synced)
+            val start = synced.queue.getOrNull(synced.queueIndex)
+                ?: synced.queue.firstOrNull()
+                ?: synced.now.firstOrNull()
+                ?: synced.stars.firstOrNull()
+                ?: return@launch
+            play(start.id)
+        }
     }
 
     /** Fresh context queue from the current listen matrix (desktop Renew Queue). */
-    fun renewQueue() = call("renew_queue")
+    fun renewQueue(after: (EngineSnapshot) -> Unit = {}) {
+        viewModelScope.launch {
+            ensureBoot()
+            flushPendingLens()
+            val snap = withContext(Dispatchers.IO) { engine.call("renew_queue") }
+            applySnap(snap)
+            after(snap)
+        }
+    }
+
+    /** Apply any debounced lens move before queue work so Renew/Play Context match the map. */
+    private suspend fun flushPendingLens() {
+        val next = pendingLens ?: return
+        pendingLens = null
+        val snap = withContext(Dispatchers.IO) {
+            engine.call(
+                "set_lens",
+                JSONObject()
+                    .put("x", next.first.toDouble())
+                    .put("y", next.second.toDouble())
+                    .put("radius", next.third.toDouble()),
+            )
+        }
+        applySnap(snap)
+    }
 
     fun togglePlay() {
         val current = _state.value.snapshot.current

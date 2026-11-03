@@ -100,7 +100,7 @@ fun MainScreen(
         onAnalyze = vm::analyze,
         onRescan = vm::rescan,
         onPlayContext = vm::playContext,
-        onRenewQueue = vm::renewQueue,
+        onRenewQueue = { done -> vm.renewQueue { done(it.ok) } },
         onAddFolder = vm::pickFolder,
         onRemoveFolder = vm::removeFolder,
         onCancelJob = vm::cancelJob,
@@ -129,7 +129,7 @@ fun MainScreen(
     onAnalyze: () -> Unit = {},
     onRescan: () -> Unit = {},
     onPlayContext: () -> Unit = {},
-    onRenewQueue: () -> Unit = {},
+    onRenewQueue: (done: (Boolean) -> Unit) -> Unit = { it(true) },
     onAddFolder: () -> Unit = {},
     onRemoveFolder: (String) -> Unit = {},
     onCancelJob: () -> Unit = {},
@@ -222,22 +222,23 @@ fun MainScreen(
                             tracks = snap.queue,
                             currentId = snap.current?.id,
                             queueIndex = snap.queueIndex,
+                            queueStale = snap.queueStale,
+                            renewEnabled = snap.trackCount > 0 && !ui.busy,
                             onPlay = onPlay,
                             onLove = loveWithFlash,
                             onOpenWhy = { overlay = Overlay.Why(it) },
                             onRenewQueue = {
-                                onRenewQueue()
-                                flash("Queue renewed")
+                                onRenewQueue { ok -> if (ok) flash("Queue renewed") }
                             },
                         )
                         AppTab.Context -> ContextScreen(
                             snapshot = snap,
+                            renewEnabled = snap.trackCount > 0 && !ui.busy,
                             onPlay = onPlay,
                             onPlayContext = onPlayContext,
                             onOpenWhy = { overlay = Overlay.Why(it) },
                             onRenewQueue = {
-                                onRenewQueue()
-                                flash("Queue renewed")
+                                onRenewQueue { ok -> if (ok) flash("Queue renewed") }
                             },
                         )
                         AppTab.More -> SettingsScreen(
