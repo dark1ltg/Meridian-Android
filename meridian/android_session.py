@@ -631,6 +631,9 @@ class AndroidSession:
             raise KeyError(f"unknown track {track_id}")
         outgoing = self._current_track()
         outgoing_id = outgoing.id if outgoing is not None else None
+        # Queue index alone is not live audio — only crossfade-credit when a play
+        # was already committed or a fade is already armed (matches real transport).
+        live_playback = self._pending_play is not None or bool(self.played_history)
         self._interrupt_crossfade_credit(int(track_id))
         if track.id not in self.queue_ids:
             self.explicit_ids = [track.id] + [i for i in self.explicit_ids if i != track.id]
@@ -644,7 +647,11 @@ class AndroidSession:
             self.queue_index = self.queue_ids.index(track.id)
         self.skip_pressure = max(0.0, self.skip_pressure - 0.18)
         self.status = track.label
-        if outgoing_id is not None and outgoing_id != track.id:
+        if (
+            live_playback
+            and outgoing_id is not None
+            and outgoing_id != track.id
+        ):
             self._pending_play = track.id
             self._xfade_out = outgoing_id
             if natural_advance:
