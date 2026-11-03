@@ -35,12 +35,12 @@ bash android/scripts/build-media3-ffmpeg.sh
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 144**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 145**).
 
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk)  |
-| **APK SHA-256** | see release `.sha256` (versionCode 144) |
+| **APK SHA-256** | see release `.sha256` (versionCode 145) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz)  |
 | **Source SHA-256** | see release `.sha256` |
 | **ABI** | arm64-v8a |
