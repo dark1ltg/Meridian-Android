@@ -72,6 +72,7 @@ COMMON_OPTIONS=(
   --target-os=android
   --enable-static
   --disable-shared
+  --enable-pic
   --disable-doc
   --disable-programs
   --disable-everything
@@ -82,6 +83,7 @@ COMMON_OPTIONS=(
   --disable-symver
   --enable-avformat
   --enable-swresample
+  --extra-cflags=-fPIC
   --extra-ldexeflags=-pie
   --disable-v4l2-m2m
   --disable-vulkan
