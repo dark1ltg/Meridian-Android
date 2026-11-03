@@ -41,7 +41,9 @@ import androidx.compose.material3.TextButton
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -83,8 +85,10 @@ fun MainScreen(
     onLeaveApp: () -> Unit = {},
     onRecoverAudioAccess: () -> Unit = {},
 ) {
+    val clock by vm.clock.collectAsState()
     MainScreen(
         ui = ui,
+        clock = clock,
         onToggleSearch = { vm.toggleSearch(!ui.searchOpen) },
         onMode = vm::setMode,
         onSearch = vm::search,
@@ -114,6 +118,7 @@ fun MainScreen(
 @Composable
 fun MainScreen(
     ui: UiState,
+    clock: PlaybackClock = PlaybackClock(),
     onToggleSearch: () -> Unit = {},
     onMode: (String) -> Unit = {},
     onSearch: (String) -> Unit = {},
@@ -223,7 +228,7 @@ fun MainScreen(
                             currentId = snap.current?.id,
                             queueIndex = snap.queueIndex,
                             queueStale = snap.queueStale,
-                            renewEnabled = snap.trackCount > 0 && !ui.busy,
+                            renewEnabled = snap.trackCount > 0 && !ui.busy && !ui.job.running,
                             onPlay = onPlay,
                             onLove = loveWithFlash,
                             onOpenWhy = { overlay = Overlay.Why(it) },
@@ -233,7 +238,8 @@ fun MainScreen(
                         )
                         AppTab.Context -> ContextScreen(
                             snapshot = snap,
-                            renewEnabled = snap.trackCount > 0 && !ui.busy,
+                            renewEnabled = snap.trackCount > 0 && !ui.busy && !ui.job.running,
+                            playContextEnabled = !ui.busy && !ui.job.running,
                             onPlay = onPlay,
                             onPlayContext = onPlayContext,
                             onOpenWhy = { overlay = Overlay.Why(it) },
@@ -279,8 +285,8 @@ fun MainScreen(
             NowPlayingScreen(
                 track = snap.current,
                 playing = ui.playing,
-                positionMs = ui.positionMs,
-                durationMs = ui.durationMs.coerceAtLeast(snap.current?.durationMs ?: 0L),
+                positionMs = clock.positionMs,
+                durationMs = clock.durationMs.coerceAtLeast(snap.current?.durationMs ?: 0L),
                 volume = ui.volume,
                 onClose = { overlay = Overlay.None },
                 onToggle = onTogglePlay,
@@ -462,8 +468,15 @@ private fun MapTab(
 ) {
     val snap = ui.snapshot
     val lensAim = remember { LensAim(snap.lensX, snap.lensY, snap.lensRadius) }
-    val nearby = snap.stars.count { inLens(it, lensAim.x, lensAim.y, lensAim.radius) }
-        .coerceAtLeast(snap.queue.size)
+    // Avoid O(stars) on the UI thread at pointer rate while dragging.
+    var nearby by remember { mutableIntStateOf(snap.queue.size) }
+    LaunchedEffect(lensAim.x, lensAim.y, lensAim.radius, snap.stars, lensAim.dragging) {
+        if (lensAim.dragging) {
+            delay(80)
+        }
+        nearby = snap.stars.count { inLens(it, lensAim.x, lensAim.y, lensAim.radius) }
+            .coerceAtLeast(snap.queue.size)
+    }
     val (glow, kinetic) = moodWord(lensAim.x, lensAim.y)
     val skyHintState = remember { mutableStateOf("") }
     val skyHint = skyHintState.value
@@ -557,7 +570,8 @@ private fun MapTab(
                     )
                     Button(
                         onClick = onPlayContext,
-                        enabled = snap.queue.isNotEmpty() || snap.stars.isNotEmpty(),
+                        enabled = !ui.busy && !ui.job.running &&
+                            (snap.queue.isNotEmpty() || snap.stars.isNotEmpty()),
                         colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
                         modifier = Modifier
                             .fillMaxWidth()

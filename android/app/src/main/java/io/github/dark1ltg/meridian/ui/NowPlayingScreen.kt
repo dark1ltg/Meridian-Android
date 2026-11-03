@@ -30,6 +30,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +68,10 @@ fun NowPlayingScreen(
     onVolume: (Float) -> Unit,
 ) {
     val dur = durationMs.coerceAtLeast(1L)
+    var scrubbing by remember { mutableStateOf(false) }
+    var scrub by remember { mutableFloatStateOf(0f) }
+    var volumeScrub by remember { mutableFloatStateOf(volume) }
+    val sliderPos = if (scrubbing) scrub else (positionMs.toFloat() / dur).coerceIn(0f, 1f)
     Box(Modifier.fillMaxSize()) {
         Sky(seed = 5)
         Column(
@@ -113,8 +122,15 @@ fun NowPlayingScreen(
             )
             Spacer(Modifier.height(20.dp))
             Slider(
-                value = (positionMs.toFloat() / dur).coerceIn(0f, 1f),
-                onValueChange = { onSeek((it * dur).toLong()) },
+                value = sliderPos,
+                onValueChange = {
+                    scrubbing = true
+                    scrub = it
+                },
+                onValueChangeFinished = {
+                    scrubbing = false
+                    onSeek((scrub * dur).toLong())
+                },
                 colors = SliderDefaults.colors(
                     thumbColor = Color.White,
                     activeTrackColor = Orange,
@@ -122,7 +138,11 @@ fun NowPlayingScreen(
                 ),
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(formatMs(positionMs), color = Mute, fontSize = 12.sp)
+                Text(
+                    formatMs(if (scrubbing) (scrub * dur).toLong() else positionMs),
+                    color = Mute,
+                    fontSize = 12.sp,
+                )
                 Text(formatMs(durationMs), color = Mute, fontSize = 12.sp)
             }
             Row(
@@ -160,8 +180,11 @@ fun NowPlayingScreen(
             ) {
                 Icon(Icons.Outlined.VolumeUp, contentDescription = null, tint = Mute, modifier = Modifier.size(18.dp))
                 Slider(
-                    value = volume,
-                    onValueChange = onVolume,
+                    value = volumeScrub,
+                    onValueChange = {
+                        volumeScrub = it
+                        onVolume(it)
+                    },
                     modifier = Modifier.weight(1f).padding(start = 8.dp),
                     colors = SliderDefaults.colors(
                         thumbColor = Color.White,

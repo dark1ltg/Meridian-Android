@@ -1,11 +1,14 @@
 package io.github.dark1ltg.meridian.ui
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,6 +21,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.dark1ltg.meridian.playback.CoverArt
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun TrackArt(
@@ -27,19 +32,23 @@ fun TrackArt(
     corner: Dp = 16.dp,
     useAlbumArt: Boolean = false,
 ) {
-    val bitmap = remember(path, useAlbumArt) {
-        if (useAlbumArt) CoverArt.bitmap(path) else null
+    val bitmap by produceState<Bitmap?>(initialValue = null, path, useAlbumArt) {
+        if (!useAlbumArt || path.isBlank()) {
+            value = null
+            return@produceState
+        }
+        value = withContext(Dispatchers.IO) { CoverArt.bitmap(path) }
     }
     Box(modifier.clip(RoundedCornerShape(corner))) {
         if (bitmap != null) {
             Image(
-                bitmap = bitmap.asImageBitmap(),
+                bitmap = bitmap!!.asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
         } else {
-            val hash = abs(title.hashCode())
+            val hash = remember(title) { abs(title.hashCode()) }
             val a = Color(0xFF2A1058)
             val b = Color(
                 red = 0.35f + (hash % 50) / 120f,

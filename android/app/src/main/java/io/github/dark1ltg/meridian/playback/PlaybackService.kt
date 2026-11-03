@@ -136,6 +136,9 @@ class PlaybackService : MediaSessionService() {
         // Same Chaquopy AndroidSession as the UI. Never call initialize() here —
         // that closes the live library and made Play look broken after Scan/Listen.
         io.execute {
+            runCatching {
+                (application as? io.github.dark1ltg.meridian.MeridianApp)?.ensurePython()
+            }
             val data = File(filesDir, "meridian").absolutePath
             runCatching {
                 engine.call("ensure", JSONObject().put("data_dir", data))

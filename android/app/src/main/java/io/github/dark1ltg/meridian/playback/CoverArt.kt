@@ -3,6 +3,8 @@ package io.github.dark1ltg.meridian.playback
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import android.net.Uri
+import io.github.dark1ltg.meridian.data.PathProbe
 
 object CoverArt {
     fun bitmap(path: String, maxPx: Int = 512): Bitmap? {
@@ -20,7 +22,12 @@ object CoverArt {
         if (path.isBlank()) return null
         val retriever = MediaMetadataRetriever()
         return try {
-            retriever.setDataSource(path)
+            val ctx = PathProbe.app
+            if (path.startsWith("content:") && ctx != null) {
+                retriever.setDataSource(ctx, Uri.parse(path))
+            } else {
+                retriever.setDataSource(path)
+            }
             retriever.embeddedPicture
         } catch (_: Throwable) {
             null
