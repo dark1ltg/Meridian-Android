@@ -315,7 +315,7 @@ def test_path_probe_rejects_dead_content_uris() -> None:
 
 
 def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
-    set_path_probe(_Probe({"content://tree/doc/glow.mp3"}))
+    # Index trusts content: URIs (MediaStore/SAF); reachability is checked at play.
     session = AndroidSession()
     try:
         session.initialize(str(tmp_path / "data"), "")
@@ -331,13 +331,47 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
             ]
         )
         assert snap["ok"]
-        assert snap["track_count"] == 1
-        assert snap["current"] is None or snap["queue"]
-        paths = [t["path"] for t in snap["stars"]]
-        assert paths == ["content://tree/doc/glow.mp3"]
-        assert snap["stars"][0]["title"] == "Glow"
-        track = session.library.all_tracks()[0]
-        assert track.duration_ms == 185_000
+        assert snap["track_count"] == 2
+        paths = {t.path for t in session.library.all_tracks()}
+        assert paths == {
+            "content://tree/doc/glow.mp3",
+            "content://tree/doc/missing.mp3",
+        }
+        glow = next(t for t in session.library.all_tracks() if "glow" in t.path)
+        assert glow.duration_ms == 185_000
+        assert glow.title == "Glow"
+    finally:
+        session.close()
+
+
+def test_snapshot_lists_without_opening_content_uris(tmp_path: Path) -> None:
+    """Catalog snapshots must not call PathProbe (AFD open) for every content: row."""
+
+    class CountingProbe:
+        def __init__(self) -> None:
+            self.hits = 0
+
+        def reachable(self, path: str) -> bool:
+            self.hits += 1
+            return True
+
+    probe = CountingProbe()
+    set_path_probe(probe)
+    session = AndroidSession()
+    try:
+        session.initialize(str(tmp_path / "data"), "")
+        session.add_uri_tracks(
+            [{"path": f"content://tree/doc/t{i}.mp3", "title": f"T{i}"} for i in range(5)]
+        )
+        probe.hits = 0
+        snap = session.snapshot()
+        assert snap["track_count"] == 5
+        assert probe.hits == 0
+        lite = session.snapshot(lite=True)
+        assert lite["now"] or lite["stars"]
+        # Lite matrix rows omit why text.
+        if lite["now"]:
+            assert lite["now"][0].get("why", "") == ""
     finally:
         set_path_probe(None)
         session.close()

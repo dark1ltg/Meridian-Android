@@ -1,13 +1,13 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-03**, **versionCode 143**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 144**).
 
 ## Downloads
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — ~36.2 MB, arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | `45869833318f0d2ddf58b83b6e0140a6ebd416e9f880d8b959d08b8f5616abdc` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — ~0.4 MB, full tree at this release commit |
-| **Source SHA-256** | `1539f4bef5e9850a30eb62ffb6f53b28e3ef1329e69f9d74576368f042501ee9` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
+| **APK SHA-256** | see asset `.sha256` on the release (versionCode 144) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see asset `.sha256` on the release |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
@@ -15,6 +15,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 ```
 
 ## What’s in this build
+- **UI responsiveness** — cheaper snapshots (no content-URI open per track; skip map why-text); optimistic tap-to-play; deferred Python/cold splash; separate playback clock; throttled nearby count; lighter map galaxy; async cover art; seek commits on release
 - **Renew Queue** — Queue / Context **Renew** rebuilds the context queue from the current listen matrix; **Play Context** syncs a stale queue to the lens; Renew keeps what’s playing up front; recent plays stay soft-skipped
 - **Lens hold** — aiming updates the matrix without wiping the live queue; stale-queue hint on Queue / Context; tiny lens jitter no longer resets Renew variety
 - **Listen speed** — native seek→mono @ 11025 (`libmeridian_pcm.so`), one open per track, MediaStore durations, dual Listen workers; same intro/mid/late windows as desktop
@@ -31,7 +32,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 - Native **aubio** + Media3 **FFmpeg JNI** (`libffmpegJNI.so`) for Listen/playback fallback
 
 ## Notes
-- Minimum **Android 8.0 (API 26)**; **versionCode 143** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 144** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

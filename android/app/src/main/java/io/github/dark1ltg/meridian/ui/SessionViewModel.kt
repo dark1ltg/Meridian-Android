@@ -3,6 +3,7 @@ package io.github.dark1ltg.meridian.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.dark1ltg.meridian.MeridianApp
 import io.github.dark1ltg.meridian.data.Engine
 import io.github.dark1ltg.meridian.data.EngineSnapshot
 import io.github.dark1ltg.meridian.data.FolderPaths
@@ -10,6 +11,7 @@ import io.github.dark1ltg.meridian.data.JobProgress
 import io.github.dark1ltg.meridian.data.MediaStoreMusic
 import io.github.dark1ltg.meridian.data.PathProbe
 import io.github.dark1ltg.meridian.data.SafIngest
+import io.github.dark1ltg.meridian.data.TrackRow
 import io.github.dark1ltg.meridian.data.TreeGrants
 import io.github.dark1ltg.meridian.data.emptySnapshot
 import io.github.dark1ltg.meridian.playback.LocalPlayer
@@ -26,6 +28,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
+import kotlin.math.abs
 
 data class UiState(
     val snapshot: EngineSnapshot = emptySnapshot(),
@@ -39,11 +42,19 @@ data class UiState(
     val job: JobProgress = JobProgress(),
 )
 
+/** Playback clock — separate from [UiState] so the map shell does not recompose 4×/s. */
+data class PlaybackClock(
+    val positionMs: Long = 0L,
+    val durationMs: Long = 0L,
+)
+
 class SessionViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = Engine()
     val player = LocalPlayer(app)
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state
+    private val _clock = MutableStateFlow(PlaybackClock())
+    val clock: StateFlow<PlaybackClock> = _clock
     private var work: Job? = null
     private var lensFlush: Job? = null
     private var searchJob: Job? = null
@@ -59,24 +70,24 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         _state.update { it.copy(playing = isPlaying) }
                     }
-
-                    override fun onMediaItemTransition(
-                        mediaItem: androidx.media3.common.MediaItem?,
-                        reason: Int,
-                    ) {
-                        call("snapshot")
-                    }
+                    // Skip/finish already return a snapshot via PlaybackService —
+                    // do not pull another full classify on every media transition.
                 },
             )
             _state.update { it.copy(playing = p.isPlaying, volume = p.volume) }
         }
         viewModelScope.launch {
+            var lastPos = -1L
+            var lastDur = -1L
             while (true) {
-                delay(250)
+                delay(500)
                 val p = player.player
                 val pos = p?.currentPosition?.coerceAtLeast(0L) ?: 0L
                 val dur = p?.duration?.let { if (it > 0) it else 0L } ?: 0L
-                _state.update { it.copy(positionMs = pos, durationMs = dur) }
+                if (abs(pos - lastPos) < 400 && dur == lastDur) continue
+                lastPos = pos
+                lastDur = dur
+                _clock.value = PlaybackClock(pos, dur)
             }
         }
     }
@@ -92,6 +103,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
             // ensure() reuses a live session (PlaybackService may already hold it)
             // and never auto-registers an empty Music folder before Allow.
             val snap = withContext(Dispatchers.IO) {
+                (getApplication<Application>() as? MeridianApp)?.ensurePython()
                 engine.call("ensure", JSONObject().put("data_dir", data))
             }
             applySnap(snap)
@@ -142,23 +154,76 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     fun setMode(mode: String) = call("set_mode", JSONObject().put("mode", mode))
 
     fun play(id: Int) {
-        call(
-            "play",
-            JSONObject().put("id", id).put("position_ms", _state.value.positionMs),
-        ) { snap ->
-            val track = snap.current ?: return@call
-            val reachable = PathProbe(getApplication()).reachable(track.path)
-            if (!reachable) {
-                _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
-                call("playback_failed", JSONObject().put("id", track.id)) { next ->
-                    next.current?.takeIf { PathProbe(getApplication()).reachable(it.path) }?.let {
-                        player.play(it)
+        val local = findTrack(id)
+        viewModelScope.launch {
+            ensureBoot()
+            // Start audio ASAP from the cached row; sync engine in parallel.
+            if (local != null) {
+                val reachable = withContext(Dispatchers.IO) {
+                    PathProbe(getApplication()).reachable(local.path)
+                }
+                if (reachable) {
+                    player.play(local)
+                }
+            }
+            val snap = withContext(Dispatchers.IO) {
+                engine.call(
+                    "play",
+                    JSONObject().put("id", id).put("position_ms", _clock.value.positionMs),
+                )
+            }
+            applySnap(snap)
+            val track = snap.current ?: return@launch
+            if (local == null || track.id != local.id || track.path != local.path) {
+                val reachable = withContext(Dispatchers.IO) {
+                    PathProbe(getApplication()).reachable(track.path)
+                }
+                if (!reachable) {
+                    _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
+                    val next = withContext(Dispatchers.IO) {
+                        engine.call("playback_failed", JSONObject().put("id", track.id))
+                    }
+                    applySnap(next)
+                    next.current?.let { cand ->
+                        val ok = withContext(Dispatchers.IO) {
+                            PathProbe(getApplication()).reachable(cand.path)
+                        }
+                        if (ok) player.play(cand)
+                    }
+                    return@launch
+                }
+                player.play(track)
+            } else if (local != null) {
+                val reachable = withContext(Dispatchers.IO) {
+                    PathProbe(getApplication()).reachable(local.path)
+                }
+                if (!reachable) {
+                    _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
+                    val next = withContext(Dispatchers.IO) {
+                        engine.call("playback_failed", JSONObject().put("id", local.id))
+                    }
+                    applySnap(next)
+                    next.current?.let { cand ->
+                        val ok = withContext(Dispatchers.IO) {
+                            PathProbe(getApplication()).reachable(cand.path)
+                        }
+                        if (ok) player.play(cand)
                     }
                 }
-                return@call
             }
-            player.play(track)
         }
+    }
+
+    private fun findTrack(id: Int): TrackRow? {
+        val snap = _state.value.snapshot
+        return snap.current?.takeIf { it.id == id }
+            ?: snap.queue.find { it.id == id }
+            ?: snap.now.find { it.id == id }
+            ?: snap.deep.find { it.id == id }
+            ?: snap.fill.find { it.id == id }
+            ?: snap.shelf.find { it.id == id }
+            ?: snap.stars.find { it.id == id }
+            ?: snap.search.find { it.id == id }
     }
 
     fun skip() {
@@ -171,7 +236,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun seek(ms: Long) {
         player.seek(ms)
-        _state.update { it.copy(positionMs = ms) }
+        _clock.value = _clock.value.copy(positionMs = ms)
     }
 
     fun setVolume(value: Float) {

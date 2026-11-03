@@ -17,9 +17,9 @@ object MapLod {
     fun galaxyBudget(compact: Boolean, starCount: Int, minDimPx: Float = 0f): Int {
         val highRes = minDimPx >= 1200f
         return when {
-            compact -> if (highRes) 220 else 280
-            starCount > 900 -> if (highRes) 360 else 420
-            else -> if (highRes) 560 else 720
+            compact -> if (highRes) 160 else 220
+            starCount > 700 -> if (highRes) 260 else 320
+            else -> if (highRes) 400 else 520
         }
     }
 

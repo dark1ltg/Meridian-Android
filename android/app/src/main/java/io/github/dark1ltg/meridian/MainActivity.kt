@@ -35,8 +35,12 @@ import io.github.dark1ltg.meridian.ui.SessionViewModel
 import io.github.dark1ltg.meridian.ui.SplashScreen
 import io.github.dark1ltg.meridian.ui.theme.MeridianTheme
 import io.github.dark1ltg.meridian.ui.theme.Night
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
+
+// MeridianApp referenced for deferred Chaquopy warm-up during splash.
 
 private enum class Gate { Splash, Onboarding, Permission, App }
 
@@ -151,7 +155,11 @@ class MainActivity : ComponentActivity() {
                         Gate.Splash -> {
                             SplashScreen(onContinue = { advanceFromSplash(prefs) })
                             LaunchedEffect(Unit) {
-                                delay(1600)
+                                // Warm Python off the splash path while the brand screen shows.
+                                launch(Dispatchers.IO) {
+                                    (application as? MeridianApp)?.ensurePython()
+                                }
+                                delay(700)
                                 if (gate == Gate.Splash) advanceFromSplash(prefs)
                             }
                         }

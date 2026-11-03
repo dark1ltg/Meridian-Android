@@ -34,17 +34,31 @@ from meridian.scan_core import analyze_pending, scan_library
 _STATE_NAME = "android_ui.json"
 # Mood-map units are 0–1; ignore sub-pixel lens jitter for streak / stale.
 _LENS_MOVE_EPS = 0.015
-_MAX_MAP_STARS = 1600
+_MAX_MAP_STARS = 900
 _path_probe = None
 
 
 def set_path_probe(probe: object | None) -> None:
-    """Android PathProbe.reachable(path) — used for content: URIs."""
+    """Android PathProbe.reachable(path) — used when actually opening a file."""
     global _path_probe
     _path_probe = probe
 
 
+def _path_listed(path: str) -> bool:
+    """Fast catalog filter for snapshots — never opens content: descriptors."""
+    raw = (path or "").strip()
+    if not raw:
+        return False
+    if raw.startswith("content:"):
+        return True
+    try:
+        return Path(raw).is_file()
+    except OSError:
+        return False
+
+
 def _path_playable(path: str) -> bool:
+    """Strict reachability (may open content:). Prefer Kotlin PathProbe at play time."""
     raw = (path or "").strip()
     if not raw:
         return False
@@ -56,9 +70,7 @@ def _path_playable(path: str) -> bool:
                 return bool(fn(raw))
             except Exception:
                 return False
-    if raw.startswith("content:"):
-        return True
-    return Path(raw).exists()
+    return _path_listed(raw)
 
 
 def _dir_has_audio(folder: str) -> bool:
@@ -166,6 +178,7 @@ class AndroidSession:
         self._xfade_out: int | None = None
         self._xfade_settle_finish = False
         self._pending_play: int | None = None
+        self._playable_cache: list[Track] | None = None
 
     def initialize(self, data_dir: str, default_music: str = "") -> dict:
         self.close()
@@ -287,7 +300,8 @@ class AndroidSession:
             self._queue_stale = True
             self._renew_streak = 0
         self._save_ui_state()
-        return self.snapshot()
+        # Lite: skip matrix "why" strings — map/matrix still reclassify for the new lens.
+        return self.snapshot(lite=True)
 
     def set_mode(self, mode: str) -> dict:
         try:
@@ -384,8 +398,7 @@ class AndroidSession:
                 continue
             if not path.startswith("content:"):
                 continue
-            if not _path_playable(path):
-                continue
+            # Trust MediaStore/SAF URIs at index time; play-time PathProbe verifies.
             name = title or path.rsplit("/", 1)[-1]
             duration_ms = 0
             if isinstance(raw, dict):
@@ -419,6 +432,7 @@ class AndroidSession:
             f"Indexed {added} file{'s' if added != 1 else ''} from shared storage" if added else self.status
         )
         if added:
+            self._invalidate_playable_cache()
             self._rebuild_queue(keep_current=True)
         return self.snapshot()
 
@@ -464,6 +478,7 @@ class AndroidSession:
                     dead.append(p)
         if dead:
             lib.delete_paths(dead)
+            self._invalidate_playable_cache()
             self._rebuild_queue(keep_current=True)
         self.status = "Folder removed"
         return self.snapshot()
@@ -519,6 +534,7 @@ class AndroidSession:
                 self.status = "Scan stopped"
             else:
                 self.status = f"Indexed {added} new or changed files · context queue refreshed"
+            self._invalidate_playable_cache()
             self._rebuild_queue(keep_current=True)
         finally:
             self._end_job()
@@ -569,6 +585,7 @@ class AndroidSession:
                 self.status = "Rescan stopped"
             else:
                 self.status = f"Rescan complete ({added} files refreshed) · context queue refreshed"
+            self._invalidate_playable_cache()
             self._rebuild_queue(keep_current=True)
         finally:
             self._end_job()
@@ -729,6 +746,7 @@ class AndroidSession:
             tid = current.id
         if tid:
             lib.mark_playback_failed(tid)
+            self._invalidate_playable_cache()
         self.status = "Skipped unreadable file"
         if current is not None and current.id == tid:
             return self._advance_queue(record_next=True)
@@ -814,13 +832,21 @@ class AndroidSession:
             return None
         return lib.get(self.queue_ids[self.queue_index])
 
+    def _invalidate_playable_cache(self) -> None:
+        self._playable_cache = None
+
     def _playable_tracks(self) -> list[Track]:
+        if self._playable_cache is not None:
+            return self._playable_cache
         lib = self._require()
-        return [
+        # Cheap path listing only — content: open happens at play time on Android.
+        cached = [
             t
             for t in lib.all_tracks()
-            if not lib.is_playback_denied(t.id) and _path_playable(t.path)
+            if not lib.is_playback_denied(t.id) and _path_listed(t.path)
         ]
+        self._playable_cache = cached
+        return cached
 
     def _map_stars(
         self,
@@ -845,7 +871,11 @@ class AndroidSession:
                 reverse=True,
             )
             chosen = scored[:budget]
-        return [self._track_dict(t, by_id.get(t.id), band_label=band) for t in chosen]
+        # Map dots never show "why" — skip the string build for up to N stars.
+        return [
+            self._track_dict(t, by_id.get(t.id), band_label=band, include_why=False)
+            for t in chosen
+        ]
 
     def _rebuild_queue(self, *, keep_current: bool) -> None:
         lib = self._require()
@@ -880,6 +910,7 @@ class AndroidSession:
         ranked: RankedTrack | None = None,
         *,
         band_label: str = "",
+        include_why: bool = True,
     ) -> dict:
         q = ranked.quadrant.value if ranked else ""
         return {
@@ -901,10 +932,15 @@ class AndroidSession:
             "play_count": track.play_count,
             "skip_count": track.skip_count,
             "confidence_note": track.confidence_note or "",
-            "why": _queue_why(track, ranked, band_label=band_label, mode=self.mode.value),
+            "why": (
+                _queue_why(track, ranked, band_label=band_label, mode=self.mode.value)
+                if include_why
+                else ""
+            ),
         }
 
-    def snapshot(self) -> dict:
+    def snapshot(self, *, lite: bool = False) -> dict:
+        """Full UI state. ``lite`` skips matrix why-text (lens commits)."""
         lib = self._require()
         tracks = self._playable_tracks()
         catalog = lib.all_tracks()
@@ -913,8 +949,11 @@ class AndroidSession:
         by_id: dict[int, RankedTrack] = {item.track.id: item for item in ranked}
         by_q: dict[str, list[dict]] = {q.value: [] for q in Quadrant}
         band = ctx.band_label
+        include_matrix_why = not lite
         for item in ranked:
-            row = self._track_dict(item.track, item, band_label=band)
+            row = self._track_dict(
+                item.track, item, band_label=band, include_why=include_matrix_why
+            )
             by_q[item.quadrant.value].append(row)
         for key in by_q:
             by_q[key] = by_q[key][:24]
@@ -956,6 +995,9 @@ class AndroidSession:
                 self._track_dict(current, by_id.get(current.id), band_label=band) if current else None
             ),
             "search_query": self.search_query,
-            "search": [self._track_dict(t, by_id.get(t.id), band_label=band) for t in hits],
+            "search": [
+                self._track_dict(t, by_id.get(t.id), band_label=band, include_why=False)
+                for t in hits
+            ],
             "job": self._job_dict(),
         }

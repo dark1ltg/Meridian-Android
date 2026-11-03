@@ -46,6 +46,7 @@ fun ContextScreen(
     onOpenWhy: (Int) -> Unit,
     onRenewQueue: () -> Unit = {},
     renewEnabled: Boolean = true,
+    playContextEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val (glow, kinetic) = moodWord(snapshot.lensX, snapshot.lensY)
@@ -128,7 +129,8 @@ fun ContextScreen(
         }
         Button(
             onClick = onPlayContext,
-            enabled = snapshot.queue.isNotEmpty() || snapshot.now.isNotEmpty() || snapshot.stars.isNotEmpty(),
+            enabled = playContextEnabled &&
+                (snapshot.queue.isNotEmpty() || snapshot.now.isNotEmpty() || snapshot.stars.isNotEmpty()),
             colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
             modifier = Modifier
                 .fillMaxWidth()
