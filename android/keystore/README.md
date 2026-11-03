@@ -18,4 +18,4 @@ Restore from text if the binary is missing:
 base64 -d android/keystore/sideload.jks.b64 > android/keystore/sideload.jks
 ```
 
-The published [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) APK is signed with this key.
+The published [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) APK (**versionCode 150**) is signed with this key.

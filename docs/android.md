@@ -4,34 +4,31 @@ Meridian on **Android 8.0+ (API 26)**. Offline only. Same SQLite library, mood l
 
 Playback uses AndroidX **Media3 / ExoPlayer**. The engine is CPython 3.12 via **Chaquopy**, with `mutagen` and `numpy`. Qt, AppImage, and the desktop window are not shipped in the APK.
 
-## What you get
+Product overview (features first): **[README](../README.md)**.
 
-- Mood map as a nebula: drag empty sky to pan, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to dig in up to ~5× toward your fingers; tap a star to play, drag a star to pin. Titles show when zoomed in and stagger when packed; deep dig-in eases bloom/glow. The ring itself is a cheap overlay so aiming stays smooth on a Unihertz Titan 2 (1440×1440, Dimensity 7300 / Mali-G615); HUD mood words fade while aiming; the neighborhood queue updates when you lift or pause.
-- Empty library surfaces Allow / Index / Folder / Listen on the map; pin and love flash a short confirmation
-- Bottom navigation: Map, Queue, Context (listen matrix on the night sky), More (folders, Listen primary, Scan / Rescan under Advanced, Allow music access)
-- Onboarding, music-folder permission (recoverable from Settings), now playing (love + volume), and engine-backed “why this track”
-- Play Context starts the neighborhood queue from the lens
-- **Snappier UI** — snapshots skip content-URI probes; tap-to-play starts audio before the engine round-trip; Python loads off the cold-start path; playback clock is separate from the map shell
-- **Renew** on Queue / Context rebuilds the context queue from the current listen matrix (desktop Renew Queue: not shuffle, not skips; what’s playing stays up front). Aiming the lens updates the matrix without replacing the live queue; **Play Context** syncs a stale queue to the lens; Queue / Context show a stale hint until then
-- Modes: Focus, Wander, Charge, Dim (mode chip in the top bar; also under More → Audio)
-- Debounced search, love, skip / previous
-- Add extra folders with the system directory picker (SAF). Meridian keeps a persistable read grant for each tree, indexes via `DocumentFile` (filesystem walk when Android exposes a listable `/storage/…` path, otherwise `content:` URI tracks), and Remove drops the folder row, its tracks, and the grant. **Index all audio on this phone** pulls directories from the system music catalog (MediaStore).
+## Features (what ships in the APK)
 
-- Scan and Listen report the current filename plus **N of total** (determinate bar) once per surface and can be cancelled
-- After you allow music access on the permission screen (or tap Scan / Add folder / Index all / Allow), Meridian **indexes MediaStore tracks (files or `content:` URIs), scans, then starts Listen** automatically — tags first, then waveform mood analysis and map placement
-- PlaybackService **ensures** the shared Python session (does not re-initialize / wipe the library when Play starts the media session)
-- Root **Back** backgrounds the task (`moveTaskToBack`); overlays and non-Map tabs unwind first. Returning from overview does not replay the cold-start splash. Music-access can be re-asked from Settings / map Allow; notification prompt is asked at most once.
-- **Lockscreen / background playback** — a foreground `MediaSessionService` keeps audio going when the screen is locked or you switch apps. Notification and lockscreen show title, artist, play/pause, skip, and previous (no album art). Skip/previous still go through the context queue. Opening Meridian from those controls still requires the device lock (PIN, password, pattern, biometric, or face — whatever the phone uses). The app itself is never drawn over a locked keyguard.
-- **Crossfade** — two ExoPlayer decks overlap for ~3 seconds (InOutQuad), the same always-on rule as desktop. Skip, pause, and seek cut the fade short. Natural advance starts about a fade-length before the end of a long track.
-- **FFmpeg JNI** — Release CI builds `libffmpegJNI.so` into `android/app/src/main/jniLibs/arm64-v8a` via `android/scripts/build-media3-ffmpeg.sh` before packaging. Locally: `MERIDIAN_FFMPEG_ABIS=arm64-v8a bash android/scripts/build-media3-ffmpeg.sh` (or omit the env var for arm64 + x86_64). When present, ExoPlayer can prefer the Media3 FFmpeg renderer and Listen falls back to it when MediaCodec cannot decode the file.
+| Area | What you get |
+|---|---|
+| **Mood map** | Nebula sky: pan empty space, drag the lens ring to aim, pinch inside to resize, pinch outside to dig in ~5×; tap a star to play, drag to pin. Titles appear when zoomed and stagger when packed. Smooth aiming on Titan 2–class (1440×1440). |
+| **Listen** | After Allow (or Scan / Add folder / Index), Meridian indexes, scans, then waveform-listens automatically — same intro/mid/late honesty as desktop **1.3.6**. |
+| **Context queue** | **Renew** rebuilds from the listen matrix (not shuffle); **Play Context** syncs a stale queue to the lens; modes Focus / Wander / Charge / Dim. |
+| **Matrix** | Context tab: NOW / DEEP / FILL / SHELF on the night sky. |
+| **Playback** | ~3s dual-deck crossfade; lockscreen + notification session; skip/previous through the queue; device lock required to open the UI from media controls. |
+| **Library** | MediaStore + SAF folders with persistable grants; Remove drops folder, tracks, and grant; progress shows filename + **N of total**. |
+| **Chrome** | Map / Queue / Context / More; love, volume, honest “why”, debounced search; Back backgrounds without splash replay. |
 
-On-device **Listen** uses the same Python mood math as Linux **1.3.6**: three 12s intro/mid/late windows on long tracks, loudness-normalized cues, placement honesty (dialogue drop, pitch Glow, slope, sub-bass), and shape/timbre/steer leftovers for the queue. PCM comes from **MediaCodec** first (MP3/AAC/M4A and other platform codecs), then the **Media3 FFmpeg decoder**. Rhythm uses **aubio** (`libmeridian_aubio.so`). UI type is the same **Ubuntu Sans** / **Ubuntu Condensed** files as desktop (`resources/fonts/`, Ubuntu Font Licence 1.0).
+Native stack in the release APK: `libmeridian_aubio.so`, `libffmpegJNI.so`, `libmeridian_pcm.so`. UI type is Ubuntu Sans / Ubuntu Condensed (`resources/fonts/`, Ubuntu Font Licence 1.0).
+
+On-device **Listen** uses the same Python mood math as Linux **1.3.6**: three 12s intro/mid/late windows on long tracks, loudness-normalized cues, placement honesty (dialogue drop, pitch Glow, slope, sub-bass), and shape/timbre/steer leftovers for the queue. PCM comes from **MediaCodec** first, then the **Media3 FFmpeg decoder**. Rhythm uses **aubio**.
 
 ```bash
 # rebuild FFmpeg JNI after changing enabled decoders (needs NDK r26+)
 export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.3.11579264
 bash android/scripts/build-media3-ffmpeg.sh
 ```
+
+Release CI builds `libffmpegJNI.so` via `android/scripts/build-media3-ffmpeg.sh` before packaging. Locally: `MERIDIAN_FFMPEG_ABIS=arm64-v8a bash android/scripts/build-media3-ffmpeg.sh` (or omit the env var for arm64 + x86_64).
 
 ## Install (release APK + source)
 
@@ -40,9 +37,9 @@ Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Androi
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) |
-| **APK SHA-256** | see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 150) |
+| **APK SHA-256** | [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 150) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
-| **Source SHA-256** | see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
+| **Source SHA-256** | [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 
