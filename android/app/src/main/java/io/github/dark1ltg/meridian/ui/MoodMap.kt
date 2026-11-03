@@ -345,12 +345,12 @@ private fun StarFieldLayer(
             val cx = w / 2f
             val cy = h / 2f
             labelCandidates.sortBy { hypot((it.first.x - cx).toDouble(), (it.first.y - cy).toDouble()) }
-            labelCandidates.take(MapLod.maxLabels(zoom)).forEach { (p, star) ->
-                drawStarLabel(p, star.title, labelPaint)
+            placeStarLabels(labelCandidates, MapLod.maxLabels(zoom)).forEach { placed ->
+                drawStarLabelAt(placed.drawAt, placed.title, labelPaint)
             }
         }
         hover?.let { (p, text) ->
-            if (!compact) drawStarLabel(Offset(p.x, p.y - 18f), text, labelPaint)
+            if (!compact) drawStarLabelAt(Offset(p.x + 10f, p.y - 26f), text, labelPaint)
         }
     }
 }
@@ -389,8 +389,66 @@ private fun LensChromeLayer(
     }
 }
 
-private fun DrawScope.drawStarLabel(p: Offset, title: String, paint: AndroidPaint) {
-    drawContext.canvas.nativeCanvas.drawText(title.take(22), p.x + 10f, p.y - 8f, paint)
+private fun DrawScope.drawStarLabelAt(drawAt: Offset, title: String, paint: AndroidPaint) {
+    drawContext.canvas.nativeCanvas.drawText(title.take(22), drawAt.x, drawAt.y, paint)
+}
+
+internal data class PlacedStarLabel(
+    val anchor: Offset,
+    val drawAt: Offset,
+    val title: String,
+)
+
+/**
+ * Greedy collision placement: keep nearer-to-center titles, try a few offsets,
+ * skip when every slot overlaps an already placed label.
+ */
+internal fun placeStarLabels(
+    candidates: List<Pair<Offset, TrackRow>>,
+    maxLabels: Int,
+): List<PlacedStarLabel> {
+    val placed = ArrayList<PlacedStarLabel>(min(maxLabels, candidates.size))
+    val boxes = ArrayList<Rect>(min(maxLabels, candidates.size))
+    for ((anchor, star) in candidates) {
+        if (placed.size >= maxLabels) break
+        val title = star.title.take(22).ifBlank { "·" }
+        val tw = title.length * MapLod.LABEL_CHAR_W
+        val th = MapLod.LABEL_LINE_H
+        val slots = labelOffsetSlots(tw, th)
+        var chosen: Offset? = null
+        for (slot in slots) {
+            val origin = Offset(anchor.x + slot.x, anchor.y + slot.y)
+            val box = Rect(
+                origin.x - MapLod.LABEL_PAD,
+                origin.y - th,
+                origin.x + tw + MapLod.LABEL_PAD,
+                origin.y + MapLod.LABEL_PAD,
+            )
+            if (boxes.none { it.overlaps(box) }) {
+                chosen = origin
+                boxes += box
+                break
+            }
+        }
+        if (chosen != null) {
+            placed += PlacedStarLabel(anchor = anchor, drawAt = chosen, title = title)
+        }
+    }
+    return placed
+}
+
+/** Text baselines relative to the star: right, below, left, above, then farther. */
+internal fun labelOffsetSlots(textWidth: Float, textHeight: Float): List<Offset> {
+    val right = 10f
+    val above = -8f
+    return listOf(
+        Offset(right, above),
+        Offset(right, textHeight + 4f),
+        Offset(-textWidth - 6f, above),
+        Offset(-textWidth - 6f, textHeight + 4f),
+        Offset(right, above - textHeight - 4f),
+        Offset(right + 6f, above + textHeight * 0.5f),
+    )
 }
 
 internal fun moodToPx(

@@ -42,7 +42,13 @@ object MapLod {
         return 0.55f + 0.45f * t
     }
 
-    fun glowScale(zoom: Float): Float = (0.55f + (zoom - 1f) * 0.42f).coerceIn(0.55f, 1.35f)
+    /** Peak mid-zoom, then ease off so dense dig-in stays readable (less glow haze). */
+    fun glowScale(zoom: Float): Float {
+        val rising = (0.55f + (zoom - 1f) * 0.42f).coerceIn(0.55f, 1.2f)
+        if (zoom < DEEP_ZOOM) return rising
+        val t = ((zoom - DEEP_ZOOM) / (ZOOM_MAX - DEEP_ZOOM)).coerceIn(0f, 1f)
+        return rising + (0.72f - rising) * t
+    }
 
     /** Soften wash as you dig in so star cores stay readable at 60 fps. */
     fun galaxyAlpha(zoom: Float): Float = (1.15f - (zoom - 1f) * 0.22f).coerceIn(0.22f, 1f)
@@ -54,12 +60,21 @@ object MapLod {
 
     fun maxLabels(zoom: Float): Int = if (zoom >= DEEP_ZOOM) MAX_LABELS_DEEP else MAX_LABELS
 
+    /**
+     * Bloom is expensive and washes dense clusters. Mid-zoom: NOW/DEEP or all past
+     * [BLOOM_START]. Deep dig-in: selected only — plain cores + collision labels win.
+     */
     fun shouldBloom(zoom: Float, quadrant: String, selected: Boolean): Boolean {
         if (selected) return true
-        if (zoom >= DEEP_ZOOM) return quadrant == "now" || quadrant == "deep"
+        if (zoom >= DEEP_ZOOM) return false
         if (zoom >= BLOOM_START) return true
         return quadrant == "now" || quadrant == "deep"
     }
+
+    /** Approximate label box for collision (Compose canvas text, ~Ubuntu Sans). */
+    const val LABEL_CHAR_W = 7.2f
+    const val LABEL_LINE_H = 16f
+    const val LABEL_PAD = 4f
 
     fun onScreen(x: Float, y: Float, w: Float, h: Float, pad: Float = CULL_PAD): Boolean {
         return x >= -pad && y >= -pad && x <= w + pad && y <= h + pad

@@ -1,11 +1,11 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 148**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 149**).
 
 ## Downloads
 
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | see asset `.sha256` on the release (versionCode 148) |
+| **APK SHA-256** | see asset `.sha256` on the release (versionCode 149) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
 | **Source SHA-256** | see asset `.sha256` on the release |
 
@@ -15,6 +15,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 ```
 
 ## What’s in this build
+- **Dense clusters** — collision-aware star titles (stagger or drop overlaps); deep dig-in drops non-selected bloom and eases glow so packed neighborhoods stay readable
 - **Map dig-in** — pinch outside the lens zooms toward your fingers up to ~5×; LOD keeps bloom/labels/galaxy wash light for smooth aiming on Titan-class screens
 - **Lens** — press on/near the ring aims the lens (stars no longer steal the drag); pinch can shrink to a tighter ~0.05 neighborhood for dense clusters
 - **Now Playing** — title / artist / art / queue highlight follow DualDeck advances (skip and natural next) without a full engine classify per transition
@@ -36,7 +37,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 - Native **aubio** + Media3 **FFmpeg JNI** (`libffmpegJNI.so`) for Listen/playback fallback
 
 ## Notes
-- Minimum **Android 8.0 (API 26)**; **versionCode 148** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 149** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file
