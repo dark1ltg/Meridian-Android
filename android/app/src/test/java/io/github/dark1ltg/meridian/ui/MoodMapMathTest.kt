@@ -50,6 +50,22 @@ class MoodMapMathTest {
     }
 
     @Test
+    fun lensGrabBlocksStarPinLatch() {
+        assertFalse(shouldLatchStarPin(nearLens = true, hasStar = true))
+        assertTrue(shouldLatchStarPin(nearLens = false, hasStar = true))
+        assertFalse(shouldLatchStarPin(nearLens = false, hasStar = false))
+    }
+
+    @Test
+    fun lensAimAllowsTighterNeighborhood() {
+        val aim = LensAim(radius = 0.22f)
+        aim.resizeBy(0.2f)
+        assertEquals(LENS_RADIUS_MIN, aim.radius, 0.0001f)
+        aim.resizeBy(0.01f)
+        assertEquals(LENS_RADIUS_MIN, aim.radius, 0.0001f)
+    }
+
+    @Test
     fun inLensCountsNeighborhood() {
         val inside = row(1, 0.50f, 0.50f)
         val rim = row(2, 0.70f, 0.50f)
