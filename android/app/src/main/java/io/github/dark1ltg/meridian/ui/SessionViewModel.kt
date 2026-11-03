@@ -298,6 +298,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                                 uriTracks += JSONObject()
                                     .put("path", track.playPath)
                                     .put("title", track.title)
+                                    .put("duration_ms", track.durationMs)
                             } else {
                                 File(track.playPath).parentFile?.absolutePath?.let { found += it }
                             }

@@ -288,6 +288,17 @@ def set_external_pcm_decoder(decoder) -> None:
     _external_pcm_decoder = decoder
 
 
+def _release_external_pcm_session() -> None:
+    """Drop a reused per-file decoder handle (end of track / abort)."""
+    decoder = _external_pcm_decoder
+    if decoder is None:
+        return
+    try:
+        decoder.releaseSession()
+    except Exception:
+        pass
+
+
 
 
 def _register_decode_proc(proc: subprocess.Popen) -> bool:
@@ -1885,6 +1896,16 @@ def _decode_pcm_with_fallback(
     listen from the first audible sample (short head probe skips front-loaded
     silence / game cues). True silence / total decode failure still returns no PCM.
     """
+    try:
+        return _decode_pcm_with_fallback_inner(path, duration_ms)
+    finally:
+        # One open per track: drop the reused native/MediaCodec handle when done.
+        _release_external_pcm_session()
+
+
+def _decode_pcm_with_fallback_inner(
+    path: str, duration_ms: int = 0
+) -> tuple[np.ndarray | None, bool, object | None, str | None]:
     from meridian.acoustic import build_profile
 
     # Audible-span: for known durations, probe a short head; if near-silent, shift

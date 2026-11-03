@@ -33,16 +33,16 @@ bash android/scripts/build-media3-ffmpeg.sh
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 140**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 141**).
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~35.3 MB) |
-| **APK SHA-256** | `2059c23bc2bb42f21ad7dfc780310ba92480fc84084ebbb193278901b8bd33af` |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB) |
-| **Source SHA-256** | `756bd9d9b2b938f9619d30a2b9b860f1b5a8bd29431f49258a642f187bccec6c` |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) |
+| **APK SHA-256** | see release `.sha256` (versionCode 141) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see release `.sha256` |
 | **ABI** | arm64-v8a |
-| **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` |
+| **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
@@ -79,11 +79,13 @@ Python sources under `android/app/src/main/python/meridian/` are copied from the
 
 ## Listen analysis (not desktop `ffmpeg`)
 
-Desktop still shells out to host `ffmpeg`. Android does not:
+Desktop shells out to host `ffmpeg` (`-ac 1 -ar 11025 -f f32le`). Android matches that contract on-device:
 
-1. **MediaCodec** — common library formats (MP3, AAC/M4A, platform FLAC, …). Decodes each planned section window (intro / mid / late), downmixes to mono, resamples to **11025 Hz** float32 LE (same contract as `_decode_pcm` on Linux).
-2. **Media3 FFmpeg decoder** — `FfmpegAudioDecoder` / `FfmpegAudioRenderer` (Apache 2.0 Java from AndroidX Media) plus `libffmpegJNI.so` (FFmpeg n6.1.1, static libavcodec / libavutil / libswresample). Release CI / `android/scripts/build-media3-ffmpeg.sh`. Enabled decoders: vorbis, opus, flac, alac, mp3, aac, pcm_s16le, pcm_s24le, pcm_f32le, wmav2.
-3. **aubio** — onset/tempo in `libmeridian_aubio.so` (aubio 0.4.9, GPL-3). Python `onset_stats` calls `AubioBridge` over JNI when the `aubio` pip module is absent.
+1. **`libmeridian_pcm.so`** (preferred) — FFmpeg avformat seek + swresample → mono float32 LE @ **11025 Hz** in one native pass; **one open per file** for intro/mid/late windows. Built by `android/scripts/build-media3-ffmpeg.sh` alongside Media3 JNI.
+2. **MediaCodec session reuse** — if native PCM is missing, open the codec once per file and seek windows (still full-rate → Kotlin resample).
+3. **Media3 FFmpeg decoder** — `FfmpegAudioDecoder` + `libffmpegJNI.so` when MediaCodec cannot open the file.
+4. **Dual Listen workers** on Android (`analyze_pending(workers=2)`); same 12s intro/mid/late windows as desktop. MediaStore **DURATION** is stored for `content://` tracks so Listen can plan windows instead of a blind ~28s pass.
+5. **aubio** — onset/tempo in `libmeridian_aubio.so` (aubio 0.4.9, GPL-3).
 
 ## Permissions
 

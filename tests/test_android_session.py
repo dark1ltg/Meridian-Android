@@ -321,7 +321,11 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
         session.initialize(str(tmp_path / "data"), "")
         snap = session.add_uri_tracks(
             [
-                {"path": "content://tree/doc/glow.mp3", "title": "Glow.mp3"},
+                {
+                    "path": "content://tree/doc/glow.mp3",
+                    "title": "Glow.mp3",
+                    "duration_ms": 185_000,
+                },
                 {"path": "content://tree/doc/missing.mp3", "title": "Missing.mp3"},
                 {"path": "/not/a/uri.mp3", "title": "Nope"},
             ]
@@ -332,9 +336,31 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
         paths = [t["path"] for t in snap["stars"]]
         assert paths == ["content://tree/doc/glow.mp3"]
         assert snap["stars"][0]["title"] == "Glow"
+        track = session.library.all_tracks()[0]
+        assert track.duration_ms == 185_000
     finally:
         set_path_probe(None)
         session.close()
+
+
+def test_analyze_pending_accepts_two_workers(tmp_path: Path) -> None:
+    from meridian.scan_core import analyze_pending
+
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "a.mp3").write_bytes(b"ID3")
+    (music / "b.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    seen: list[str] = []
+
+    def on_progress(name: str, index: int, total: int) -> None:
+        seen.append(f"{index}/{total}:{name}")
+
+    analyze_pending(session.library, progress=on_progress, workers=2)
+    assert len(seen) >= 2
+    session.close()
 
 
 def test_scan_progress_reports_file_and_counts(tmp_path: Path) -> None:

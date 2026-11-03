@@ -85,6 +85,8 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/26.3.11579264
           MERIDIAN_FFMPEG_ABIS: arm64-v8a
+          # Rebuild when Listen PCM (avformat) is missing or FORCE is set.
+          MERIDIAN_FFMPEG_FORCE: "1"
         run: bash android/scripts/build-media3-ffmpeg.sh
 
       - name: Gradle 8.9

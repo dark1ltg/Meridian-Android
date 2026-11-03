@@ -15,7 +15,7 @@ class MeridianApp : Application() {
         }
         try {
             val py = Python.getInstance()
-            val decoder = PcmDecoder()
+            val decoder = PcmDecoder(this)
             decoder.clearAbort()
             py.getModule("meridian.features").callAttr("set_external_pcm_decoder", decoder)
             py.getModule("meridian.android_bridge").callAttr("set_path_probe", PathProbe(this))

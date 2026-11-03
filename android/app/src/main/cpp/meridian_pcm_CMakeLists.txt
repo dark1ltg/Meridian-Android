@@ -1,0 +1,36 @@
+# Built from android/scripts/build-media3-ffmpeg.sh (not the aubio Gradle CMake).
+# Expects:
+#   MERIDIAN_PCM_SRC  — path to meridian_pcm_jni.c
+#   MERIDIAN_FFMPEG_LIBDIR — android-libs/<abi> with libav*.a
+#   MERIDIAN_FFMPEG_INCLUDE — ffmpeg source tree (for headers)
+cmake_minimum_required(VERSION 3.22.1)
+project(meridian_pcm C)
+
+add_library(meridian_pcm SHARED ${MERIDIAN_PCM_SRC})
+
+target_include_directories(meridian_pcm PRIVATE
+    ${MERIDIAN_FFMPEG_INCLUDE}
+    ${MERIDIAN_FFMPEG_LIBDIR}/../include
+)
+
+# Headers live in the ffmpeg source tree; installed libs in android-libs/<abi>.
+target_include_directories(meridian_pcm PRIVATE
+    ${MERIDIAN_FFMPEG_INCLUDE}
+)
+
+find_library(android_log_lib log)
+find_library(android_z_lib z)
+find_library(android_m_lib m)
+
+# Order matters for static archives.
+target_link_libraries(meridian_pcm
+    ${MERIDIAN_FFMPEG_LIBDIR}/libavformat.a
+    ${MERIDIAN_FFMPEG_LIBDIR}/libavcodec.a
+    ${MERIDIAN_FFMPEG_LIBDIR}/libswresample.a
+    ${MERIDIAN_FFMPEG_LIBDIR}/libavutil.a
+    ${android_log_lib}
+    ${android_z_lib}
+    ${android_m_lib}
+)
+
+target_compile_options(meridian_pcm PRIVATE -O2 -fPIC -std=c11)
