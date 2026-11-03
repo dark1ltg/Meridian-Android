@@ -33,4 +33,9 @@ target_link_libraries(meridian_pcm
     ${android_m_lib}
 )
 
+# Same NDK 23+ arm64 fix Media3 uses for libffmpegJNI.so (NEON asm in avutil).
+if(ANDROID_ABI STREQUAL "arm64-v8a")
+    target_link_options(meridian_pcm PRIVATE "-Wl,-Bsymbolic")
+endif()
+
 target_compile_options(meridian_pcm PRIVATE -O2 -fPIC -std=c11)
