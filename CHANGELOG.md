@@ -7,15 +7,16 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-03
 
-Published on this repo’s Releases page (**versionCode 145** / versionName 1.3.6):
+Published on this repo’s Releases page (**versionCode 146** / versionName 1.3.6):
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `93cc33c073e2ecb7f3bc5a4b6bc37f2ceb1bd3eba0b4704d7085f99ecb3a7c28`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~0.4 MB; SHA-256 `697402cf6bf5d2087459f917269c4b9d2da7f95b01b4f0def43ccad54c240d29`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); checksums refresh with versionCode 146
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
+- **Now Playing**: media-item transitions sync title/artist/art and queue highlight from the cached shell (no full classify per advance); skip and natural next update the player page with the audio
 - **Crossfade**: first play after scan is an immediate commit — post-scan queue “current” no longer arms a phantom crossfade; Previous-during-fade still restores the outgoing track without re-crediting play count
-- **UI responsiveness**: cheap path listing + cached playable set; lite lens snapshots; optimistic play; deferred Chaquopy + shorter splash; playback clock StateFlow; throttled nearby HUD; lower galaxy LOD; async cover art; seek on release; no redundant media-transition snapshot; busy-gate Play Context
+- **UI responsiveness**: cheap path listing + cached playable set; lite lens snapshots; optimistic play; deferred Chaquopy + shorter splash; playback clock StateFlow; throttled nearby HUD; lower galaxy LOD; async cover art; seek on release; busy-gate Play Context
 - **Renew Queue** fixes: Play Context syncs a lens-stale queue; Renew keeps the playing track at the front; recent plays soft-skipped; pending lens flushed before Renew; success toast only after engine OK; Renew disabled while empty/busy; pin holds the queue; scan/Listen/mode status notes queue refresh; renew streak persists and ignores tiny lens jitter
 - **Renew Queue** (desktop parity): Queue / Context **Renew** rebuilds the context queue from the current listen matrix via `RenewalContext` (not shuffle / not skips); lens moves update the matrix without wiping the live queue
 - Listen speed: desktop-shaped native seek→mono @ 11025 (`libmeridian_pcm.so`), one decoder open per track, MediaStore durations for URI tracks, dual Listen workers — same mood windows as desktop

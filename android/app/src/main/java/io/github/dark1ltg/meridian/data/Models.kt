@@ -61,7 +61,16 @@ data class EngineSnapshot(
     val search: List<TrackRow>,
     val searchQuery: String,
     val job: JobProgress = JobProgress(),
-)
+) {
+    /** Point Now Playing / queue highlight at [row] without a full engine refresh. */
+    fun withPlayingTrack(row: TrackRow): EngineSnapshot {
+        val qIdx = queue.indexOfFirst { it.id == row.id }
+        return copy(
+            current = row,
+            queueIndex = if (qIdx >= 0) qIdx else queueIndex,
+        )
+    }
+}
 
 fun emptySnapshot() = EngineSnapshot(
     ok = true,
