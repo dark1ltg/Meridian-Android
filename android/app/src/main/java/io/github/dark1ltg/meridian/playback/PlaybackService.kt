@@ -40,6 +40,8 @@ class PlaybackService : MediaSessionService() {
     private var decks: DualDeck? = null
     private var focus: PlaybackAudioFocus? = null
     private var advancing = false
+    /** Bumped on UI setMediaItem/play so a late finished_current cannot overwrite the tap. */
+    private var transportEpoch = 0
     private val noisy = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
@@ -164,12 +166,15 @@ class PlaybackService : MediaSessionService() {
     private fun advance(method: String, payload: JSONObject = JSONObject()) {
         if (method == "finished_current" && advancing) return
         if (method == "finished_current") advancing = true
+        val epochAtStart = transportEpoch
         io.execute {
             try {
                 val snap = engine.call(method, payload)
                 val next = snap.current
                 main.post {
                     if (method == "finished_current") advancing = false
+                    // UI already started a newer track — drop this auto-advance.
+                    if (method == "finished_current" && epochAtStart != transportEpoch) return@post
                     if (next != null && next.path.isNotBlank()) {
                         playTrack(next)
                     } else {
@@ -218,6 +223,8 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun setMediaItem(mediaItem: MediaItem) {
+            transportEpoch += 1
+            advancing = false
             focus?.request()
             decks?.play(mediaItem)
         }

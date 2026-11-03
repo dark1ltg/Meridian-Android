@@ -43,6 +43,20 @@ class MapLodTest {
     }
 
     @Test
+    fun midZoomDoesNotBloomEveryStar() {
+        assertFalse(MapLod.shouldBloom(2.0f, "shelf", selected = false))
+        assertFalse(MapLod.shouldBloom(2.0f, "fill", selected = false))
+        assertTrue(MapLod.shouldBloom(2.0f, "now", selected = false))
+        assertTrue(MapLod.shouldBloom(2.0f, "fill", selected = true))
+    }
+
+    @Test
+    fun labelCollisionBoxesMatchTextScale() {
+        assertEquals(14f, MapLod.LABEL_CHAR_W, 0.001f)
+        assertEquals(28f, MapLod.LABEL_LINE_H, 0.001f)
+    }
+
+    @Test
     fun cullsOffscreen() {
         assertFalse(MapLod.onScreen(-400f, 10f, 200f, 200f, pad = 72f))
         assertTrue(MapLod.onScreen(10f, 10f, 200f, 200f))

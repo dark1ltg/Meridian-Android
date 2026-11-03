@@ -27,6 +27,52 @@ def test_session_indexes_and_queues(tmp_path: Path) -> None:
     session.close()
 
 
+def test_skip_after_long_listen_is_not_hate(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "a.mp3").write_bytes(b"ID3")
+    (music / "b.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    a, b = session.library.all_tracks()[0].id, session.library.all_tracks()[1].id
+    session.queue_ids = [a, b]
+    session.queue_index = 0
+    session.play(a)
+    before_skips = session.library.get(a).skip_count
+    session.skip(position_ms=60_000)
+    assert session.library.get(a).skip_count == before_skips
+    assert session.queue_ids[session.queue_index] == b
+    session.close()
+
+
+def test_analyze_invalidates_playable_cache(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "glow.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    tid = session.library.all_tracks()[0].id
+    _ = session.snapshot()  # warm _playable_cache
+    assert session._playable_cache is not None
+    with session.library.lock:
+        session.library.conn.execute(
+            "UPDATE tracks SET valence = 0.91, energy = 0.88, mood_confidence = 0.95, "
+            "analyzed = 1 WHERE id = ?",
+            (tid,),
+        )
+        session.library.conn.commit()
+    # Same path as analyze() after Listen writes moods.
+    session._invalidate_playable_cache()
+    session._rebuild_queue(keep_current=True)
+    snap = session.snapshot()
+    row = next(s for s in snap["stars"] if s["id"] == tid)
+    assert abs(row["valence"] - 0.91) < 1e-3
+    assert abs(row["energy"] - 0.88) < 1e-3
+    session.close()
+
+
 def test_skip_nudges_unpinned_mood(tmp_path: Path) -> None:
     music = tmp_path / "Music"
     music.mkdir()

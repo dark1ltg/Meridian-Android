@@ -166,11 +166,27 @@ class MainActivity : ComponentActivity() {
                         Gate.Onboarding -> OnboardingScreen(
                             onGetStarted = {
                                 prefs.edit().putBoolean("onboarded", true).apply()
-                                gate = if (hasAudioPermission()) Gate.App else Gate.Permission
+                                if (hasAudioPermission()) {
+                                    // Permission already granted (e.g. reinstall) — enter the
+                                    // sky and import Music/MediaStore so the library is not empty.
+                                    lateGrantImportDone = false
+                                    vm.boot()
+                                    gate = Gate.App
+                                    maybeImportAfterLateGrant()
+                                } else {
+                                    gate = Gate.Permission
+                                }
                             },
                             onSkip = {
                                 prefs.edit().putBoolean("onboarded", true).apply()
-                                gate = if (hasAudioPermission()) Gate.App else Gate.Permission
+                                if (hasAudioPermission()) {
+                                    lateGrantImportDone = false
+                                    vm.boot()
+                                    gate = Gate.App
+                                    maybeImportAfterLateGrant()
+                                } else {
+                                    gate = Gate.Permission
+                                }
                             },
                         )
                         Gate.Permission -> PermissionScreen(
@@ -393,10 +409,13 @@ class MainActivity : ComponentActivity() {
         if (gate != Gate.App) return
         if (!hasAudioPermission()) return
         val ui = vm.state.value
-        if (ui.busy || ui.snapshot.trackCount > 0) {
+        if (ui.snapshot.trackCount > 0) {
             lateGrantImportDone = true
             return
         }
+        // Boot/scan may briefly mark busy — retry on the next resume instead of
+        // permanently skipping the one automatic MediaStore import.
+        if (ui.busy) return
         lateGrantImportDone = true
         vm.boot()
         applyFolders(FolderChoice(music = true, downloads = false, other = false, allAudio = true))

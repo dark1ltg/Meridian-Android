@@ -96,6 +96,17 @@ class MoodMapMathTest {
     }
 
     @Test
+    fun digInLensHitRadiusIsCapped() {
+        val w = 1440f
+        val h = 1440f
+        val uncapped = lensHitRadiusPx(0.22f, w, h, zoom = 1f)
+        assertEquals(0.22f * 1440f, uncapped, 0.5f)
+        val deep = lensHitRadiusPx(0.22f, w, h, zoom = MapLod.ZOOM_MAX)
+        assertEquals(MapLod.LENS_HIT_CAP * 1440f, deep, 0.5f)
+        assertTrue(deep < 0.22f * 1440f * MapLod.ZOOM_MAX)
+    }
+
+    @Test
     fun inLensCountsNeighborhood() {
         val inside = row(1, 0.50f, 0.50f)
         val rim = row(2, 0.70f, 0.50f)

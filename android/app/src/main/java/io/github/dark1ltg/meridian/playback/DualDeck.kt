@@ -67,7 +67,10 @@ class DualDeck(
     }
 
     fun play(item: MediaItem) {
-        if (crossfading) finishFade(immediate = true, notify = false)
+        // Cutting a live crossfade: finish without notify, then settle once below
+        // after hardCut so deferred play credit commits exactly once.
+        val wasFading = crossfading
+        if (wasFading) finishFade(immediate = true, notify = false)
         val currentId = active.currentMediaItem?.mediaId
         val canFade = Crossfade.shouldFade(active.isPlaying, currentId, item.mediaId)
         advanceEmitted = false
@@ -76,6 +79,8 @@ class DualDeck(
             startFade(item)
         } else {
             hardCut(item)
+            // SessionViewModel arms engine.play before setMediaItem, so settle here
+            // (including wasFading interrupts) commits pending credit / finish nudge.
             onFadeSettled()
         }
     }
