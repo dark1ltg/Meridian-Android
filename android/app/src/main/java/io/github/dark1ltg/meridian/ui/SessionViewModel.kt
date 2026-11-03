@@ -190,6 +190,9 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         play(start.id)
     }
 
+    /** Fresh context queue from the current listen matrix (desktop Renew Queue). */
+    fun renewQueue() = call("renew_queue")
+
     fun togglePlay() {
         val current = _state.value.snapshot.current
         if (current == null) {

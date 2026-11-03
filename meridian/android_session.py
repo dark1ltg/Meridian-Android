@@ -22,7 +22,13 @@ from meridian.context import (
 )
 from meridian.features import CONFIDENCE_HIGH, CONFIDENCE_LOW, request_decode_abort
 from meridian.library import Library, Track
-from meridian.queue_engine import Quadrant, RankedTrack, build_plan, classify
+from meridian.queue_engine import (
+    Quadrant,
+    RankedTrack,
+    RenewalContext,
+    build_plan,
+    classify,
+)
 from meridian.scan_core import analyze_pending, scan_library
 
 _STATE_NAME = "android_ui.json"
@@ -144,6 +150,8 @@ class AndroidSession:
         self.search_query = ""
         self.status = ""
         self.played_history: list[int] = []
+        # Consecutive Renew Queue presses since last lens/mode change (capped in engine).
+        self._renew_streak = 0
         self._data_dir: Path | None = None
         self._abort = threading.Event()
         self._job_kind = ""
@@ -237,7 +245,9 @@ class AndroidSession:
         if radius is not None:
             self.lens_radius = max(LENS_RADIUS_MIN, min(LENS_RADIUS_MAX, float(radius)))
         self._save_ui_state()
-        self._rebuild_queue(keep_current=True)
+        # Desktop: lens refreshes the matrix only. The context queue holds until
+        # it runs low or the user taps Renew Queue.
+        self._renew_streak = 0
         return self.snapshot()
 
     def set_mode(self, mode: str) -> dict:
@@ -246,7 +256,54 @@ class AndroidSession:
         except ValueError:
             self.mode = Mode.WANDER
         self._save_ui_state()
+        self._renew_streak = 0
         self._rebuild_queue(keep_current=True)
+        return self.snapshot()
+
+    def renew_queue(self) -> dict:
+        """Fresh context queue from the current listen matrix (desktop Renew Queue).
+
+        Soft-demotes the previous queue via RenewalContext — not shuffle, not skips,
+        not library Rescan. Current track stays if still playable.
+        """
+        lib = self._require()
+        tracks = self._playable_tracks()
+        prior = list(self.queue_ids)
+        current = self._current_track()
+        current_id = current.id if current else None
+        exempt = set(self.explicit_ids)
+        if current_id is not None:
+            exempt.add(current_id)
+        hard = {t.id for t in lib.all_tracks() if lib.is_playback_denied(t.id)}
+        renewal = RenewalContext(
+            prior_queue_ids=frozenset(prior),
+            renew_streak=self._renew_streak,
+            exempt_ids=frozenset(exempt),
+            heard_ids=frozenset(self.played_history),
+        )
+        plan = build_plan(
+            tracks,
+            self._context(),
+            self.explicit_ids,
+            length=18,
+            hard_exclude_ids=hard,
+            renewal=renewal,
+        )
+        order = list(plan.order)
+        playable_ids = {t.id for t in tracks}
+        if current_id and current_id not in hard and current_id in playable_ids:
+            if current_id in order:
+                self.queue_index = order.index(current_id)
+            else:
+                # Keep playing even if Renew didn't re-pick it into the new list.
+                order.insert(0, current_id)
+                self.queue_index = 0
+            self.queue_ids = order
+        else:
+            self.queue_ids = order
+            self.queue_index = 0 if self.queue_ids else 0
+        self._renew_streak = min(3, self._renew_streak + 1)
+        self.status = "Context queue renewed from the current matrix."
         return self.snapshot()
 
     def add_folder(self, path: str) -> dict:

@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -43,6 +44,7 @@ fun ContextScreen(
     onPlay: (Int) -> Unit,
     onPlayContext: () -> Unit,
     onOpenWhy: (Int) -> Unit,
+    onRenewQueue: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val (glow, kinetic) = moodWord(snapshot.lensX, snapshot.lensY)
@@ -55,6 +57,7 @@ fun ContextScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 "Context",
@@ -62,8 +65,14 @@ fun ContextScreen(
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Medium,
             )
-            if (snapshot.mode.isNotBlank()) {
-                MoodChip(snapshot.mode.replaceFirstChar { it.titlecase() })
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (snapshot.mode.isNotBlank()) {
+                    MoodChip(snapshot.mode.replaceFirstChar { it.titlecase() })
+                }
+                RenewQueueButton(onRenewQueue = onRenewQueue)
             }
         }
         Row(

@@ -100,6 +100,7 @@ fun MainScreen(
         onAnalyze = vm::analyze,
         onRescan = vm::rescan,
         onPlayContext = vm::playContext,
+        onRenewQueue = vm::renewQueue,
         onAddFolder = vm::pickFolder,
         onRemoveFolder = vm::removeFolder,
         onCancelJob = vm::cancelJob,
@@ -128,6 +129,7 @@ fun MainScreen(
     onAnalyze: () -> Unit = {},
     onRescan: () -> Unit = {},
     onPlayContext: () -> Unit = {},
+    onRenewQueue: () -> Unit = {},
     onAddFolder: () -> Unit = {},
     onRemoveFolder: (String) -> Unit = {},
     onCancelJob: () -> Unit = {},
@@ -223,12 +225,20 @@ fun MainScreen(
                             onPlay = onPlay,
                             onLove = loveWithFlash,
                             onOpenWhy = { overlay = Overlay.Why(it) },
+                            onRenewQueue = {
+                                onRenewQueue()
+                                flash("Queue renewed")
+                            },
                         )
                         AppTab.Context -> ContextScreen(
                             snapshot = snap,
                             onPlay = onPlay,
                             onPlayContext = onPlayContext,
                             onOpenWhy = { overlay = Overlay.Why(it) },
+                            onRenewQueue = {
+                                onRenewQueue()
+                                flash("Queue renewed")
+                            },
                         )
                         AppTab.More -> SettingsScreen(
                             folders = snap.folders,

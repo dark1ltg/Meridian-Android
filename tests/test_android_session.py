@@ -343,6 +343,49 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
         session.close()
 
 
+def test_renew_queue_from_matrix_keeps_playing_and_lens_holds(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    for name in ("a.mp3", "b.mp3", "c.mp3"):
+        (music / name).write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    for track in session.library.all_tracks():
+        with session.library.lock:
+            session.library.conn.execute(
+                "UPDATE tracks SET valence = ?, energy = ?, mood_confidence = 0.8, "
+                "analyzed = 1 WHERE id = ?",
+                (0.2 + (track.id % 3) * 0.25, 0.3 + (track.id % 2) * 0.3, track.id),
+            )
+            session.library.conn.commit()
+    session.set_lens(0.55, 0.55, 0.25)
+    assert session.queue_ids
+    playing = session.queue_ids[0]
+    session.play(playing)
+    prior = list(session.queue_ids)
+    snap = session.renew_queue()
+    assert snap["ok"]
+    assert "renewed" in snap["status"].lower()
+    assert session.queue_ids
+    assert session._current_track() is not None
+    assert session._current_track().id == playing
+    assert session._renew_streak == 1
+    # Second renew soft-demotes; streak advances.
+    session.renew_queue()
+    assert session._renew_streak == 2
+    held = list(session.queue_ids)
+    session.set_lens(0.9, 0.2, 0.2)
+    # Lens moves the matrix only — live context queue holds (desktop Renew Queue).
+    assert list(session.queue_ids) == held
+    assert session._renew_streak == 0
+    assert prior  # first renew ran against a non-empty context queue
+    from meridian.android_bridge import _METHODS
+
+    assert "renew_queue" in _METHODS
+    session.close()
+
+
 def test_analyze_pending_accepts_two_workers(tmp_path: Path) -> None:
     from meridian.scan_core import analyze_pending
 
