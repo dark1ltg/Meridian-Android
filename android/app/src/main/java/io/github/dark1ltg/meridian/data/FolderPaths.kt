@@ -34,6 +34,8 @@ object FolderPaths {
     fun displayName(path: String): String {
         val raw = path.trim()
         if (raw.startsWith("content:")) {
+            // Synthetic MediaStore folder key used when tracks are content:// URIs.
+            if (raw.contains("/audio/media")) return "Phone audio"
             val decoded = fromTreeUri(raw)
             if (!decoded.isNullOrBlank()) return displayName(decoded)
             return "Shared folder"

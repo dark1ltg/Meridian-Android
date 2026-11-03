@@ -53,6 +53,8 @@ class MainActivity : ComponentActivity() {
     private var pendingFolders: FolderChoice? = null
     private var revealUi by mutableStateOf(false)
     private var promptingUnlock = false
+    /** One automatic MediaStore import after a late permission grant this process. */
+    private var lateGrantImportDone = false
 
     companion object {
         private const val STATE_GATE = "meridian_gate"
@@ -92,8 +94,10 @@ class MainActivity : ComponentActivity() {
         }
         val ok = hasAudioPermission() || result[audioPermission()] == true
         if (ok) {
+            lateGrantImportDone = true
             vm.boot()
-            applyFolders(pendingFolders)
+            // If the user re-asked from Settings without folder picks, index Music + MediaStore.
+            applyFolders(pendingFolders ?: FolderChoice(music = true, downloads = false, other = false, allAudio = true))
         } else {
             vm.boot()
         }
@@ -166,6 +170,7 @@ class MainActivity : ComponentActivity() {
                                 pendingFolders = FolderChoice(music, downloads, other, allAudio)
                                 prefs.edit().putBoolean("permission_prompt_done", true).apply()
                                 if (hasAudioPermission()) {
+                                    lateGrantImportDone = true
                                     vm.boot()
                                     applyFolders(pendingFolders)
                                     pendingFolders = null
@@ -187,6 +192,7 @@ class MainActivity : ComponentActivity() {
                                 vm = vm,
                                 ui = ui,
                                 onLeaveApp = { moveTaskToBack(true) },
+                                onRecoverAudioAccess = { recoverAudioAccess() },
                             )
                         }
                     }
@@ -209,6 +215,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         syncUnlockState()
+        maybeImportAfterLateGrant()
     }
 
     override fun onDestroy() {
@@ -345,7 +352,46 @@ class MainActivity : ComponentActivity() {
         if (choice.other) {
             paths += File(Environment.getExternalStorageDirectory(), "Documents").absolutePath
         }
-        vm.importSources(paths, choice.allAudio)
+        // Always pull MediaStore rows when the user opted into "all audio" — and
+        // also when they only ticked Music, so scoped-storage phones still get
+        // tracks after Allow even if /Music cannot be os.walk'd.
+        val includeStore = choice.allAudio || choice.music
+        vm.importSources(paths, includeStore)
+    }
+
+    /**
+     * User denied once (or tapped Not now) then granted audio in system Settings,
+     * or tapped Allow music access in Meridian Settings — clear the sticky flag
+     * and re-prompt / import so Scan→Listen can run.
+     */
+    private fun recoverAudioAccess() {
+        val prefs = getSharedPreferences("meridian", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("permission_prompt_done", false).apply()
+        lateGrantImportDone = false
+        if (hasAudioPermission()) {
+            lateGrantImportDone = true
+            vm.boot()
+            applyFolders(FolderChoice(music = true, downloads = false, other = false, allAudio = true))
+            gate = Gate.App
+            return
+        }
+        pendingFolders = FolderChoice(music = true, downloads = false, other = false, allAudio = true)
+        ask.launch(neededPermissions())
+    }
+
+    /** After a late system grant, import Music + MediaStore once if the library is still empty. */
+    private fun maybeImportAfterLateGrant() {
+        if (lateGrantImportDone) return
+        if (gate != Gate.App) return
+        if (!hasAudioPermission()) return
+        val ui = vm.state.value
+        if (ui.busy || ui.snapshot.trackCount > 0) {
+            lateGrantImportDone = true
+            return
+        }
+        lateGrantImportDone = true
+        vm.boot()
+        applyFolders(FolderChoice(music = true, downloads = false, other = false, allAudio = true))
     }
 
     private fun audioPermission(): String =

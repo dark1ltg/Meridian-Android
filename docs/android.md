@@ -7,17 +7,18 @@ Playback uses AndroidX **Media3 / ExoPlayer**. The engine is CPython 3.12 via **
 ## What you get
 
 - Mood map as a nebula: drag empty sky to pan, drag near the lens to aim it, pinch inside the lens to resize, pinch outside to zoom; tap a star to play, drag a star to pin. Titles show when zoomed in. The ring itself is a cheap overlay so aiming stays smooth on a Unihertz Titan 2 (1440×1440, Dimensity 7300 / Mali-G615); HUD mood words fade while aiming; the neighborhood queue updates when you lift or pause.
-- Empty library surfaces Index / Folder / Scan / Listen on the map; pin and love flash a short confirmation
-- Bottom navigation: Map, Queue, Context (listen matrix on the night sky), More (folders, Listen primary, Scan / Rescan under Advanced)
-- Onboarding, music-folder permission, now playing (love + volume), and engine-backed “why this track”
+- Empty library surfaces Allow / Index / Folder / Listen on the map; pin and love flash a short confirmation
+- Bottom navigation: Map, Queue, Context (listen matrix on the night sky), More (folders, Listen primary, Scan / Rescan under Advanced, Allow music access)
+- Onboarding, music-folder permission (recoverable from Settings), now playing (love + volume), and engine-backed “why this track”
 - Play Context starts the neighborhood queue from the lens
 - Modes: Focus, Wander, Charge, Dim (mode chip in the top bar; also under More → Audio)
 - Debounced search, love, skip / previous
 - Add extra folders with the system directory picker (SAF). Meridian keeps a persistable read grant for each tree, indexes via `DocumentFile` (filesystem walk when Android exposes a listable `/storage/…` path, otherwise `content:` URI tracks), and Remove drops the folder row, its tracks, and the grant. **Index all audio on this phone** pulls directories from the system music catalog (MediaStore).
 
 - Scan and Listen report the current filename plus **N of total** (determinate bar) once per surface and can be cancelled
-- After you allow music access on the permission screen (or tap Scan / Add folder / Index all), Meridian **scans then starts Listen** automatically — tags first, then waveform mood analysis
-- Root **Back** backgrounds the task (`moveTaskToBack`); overlays and non-Map tabs unwind first. Returning from overview does not replay the cold-start splash. Music-access and notification prompts are asked at most once each.
+- After you allow music access on the permission screen (or tap Scan / Add folder / Index all / Allow), Meridian **indexes MediaStore tracks (files or `content:` URIs), scans, then starts Listen** automatically — tags first, then waveform mood analysis and map placement
+- PlaybackService **ensures** the shared Python session (does not re-initialize / wipe the library when Play starts the media session)
+- Root **Back** backgrounds the task (`moveTaskToBack`); overlays and non-Map tabs unwind first. Returning from overview does not replay the cold-start splash. Music-access can be re-asked from Settings / map Allow; notification prompt is asked at most once.
 - **Lockscreen / background playback** — a foreground `MediaSessionService` keeps audio going when the screen is locked or you switch apps. Notification and lockscreen show title, artist, play/pause, skip, and previous (no album art). Skip/previous still go through the context queue. Opening Meridian from those controls still requires the device lock (PIN, password, pattern, biometric, or face — whatever the phone uses). The app itself is never drawn over a locked keyguard.
 - **Crossfade** — two ExoPlayer decks overlap for ~3 seconds (InOutQuad), the same always-on rule as desktop. Skip, pause, and seek cut the fade short. Natural advance starts about a fade-length before the end of a long track.
 - **FFmpeg JNI** — Release CI builds `libffmpegJNI.so` into `android/app/src/main/jniLibs/arm64-v8a` via `android/scripts/build-media3-ffmpeg.sh` before packaging. Locally: `MERIDIAN_FFMPEG_ABIS=arm64-v8a bash android/scripts/build-media3-ffmpeg.sh` (or omit the env var for arm64 + x86_64). When present, ExoPlayer can prefer the Media3 FFmpeg renderer and Listen falls back to it when MediaCodec cannot decode the file.
@@ -32,14 +33,14 @@ bash android/scripts/build-media3-ffmpeg.sh
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 139**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (2026-11-02, **versionCode 140**).
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~35.3 MB) |
-| **APK SHA-256** | `61167a112756535bb4723e83b6abfc185ea0a1f48379154b31649c96865cbed5` |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB) |
-| **Source SHA-256** | `859fca7f0d63b0f98c29b83b28248c8a3e17a4560cadfa282a6682078c1e74c4` |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) |
+| **APK SHA-256** | see release `.sha256` (versionCode 140) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see release `.sha256` |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` |
 

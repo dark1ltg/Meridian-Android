@@ -254,6 +254,55 @@ class _Probe:
         return path in self.ok
 
 
+def test_dir_has_audio_and_skips_empty_default_music(tmp_path: Path) -> None:
+    from meridian.android_session import _dir_has_audio
+
+    empty = tmp_path / "Music"
+    empty.mkdir()
+    assert not _dir_has_audio(str(empty))
+    (empty / "glow.mp3").write_bytes(b"ID3")
+    assert _dir_has_audio(str(empty))
+
+    blank = tmp_path / "empty-music"
+    blank.mkdir()
+    session = AndroidSession()
+    snap = session.initialize(str(tmp_path / "data-empty"), str(blank))
+    assert snap["folders"] == []
+    session.close()
+
+
+def test_ensure_reuses_live_library(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "glow.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    data = tmp_path / "data"
+    session.initialize(str(data), str(music))
+    session.scan()
+    lib = session.library
+    count = session.snapshot()["track_count"]
+    snap = session.ensure(str(data))
+    assert session.library is lib
+    assert snap["track_count"] == count
+    # Different root still opens a fresh session without a Music default.
+    other = tmp_path / "other"
+    snap2 = session.ensure(str(other))
+    assert session.library is not lib
+    assert snap2["folders"] == []
+    session.close()
+
+
+def test_bridge_ensure_method(tmp_path: Path) -> None:
+    from meridian.android_bridge import call
+
+    data = tmp_path / "data"
+    first = __import__("json").loads(call("ensure", __import__("json").dumps({"data_dir": str(data)})))
+    assert first["ok"]
+    second = __import__("json").loads(call("ensure", __import__("json").dumps({"data_dir": str(data)})))
+    assert second["ok"]
+    assert second.get("track_count", 0) == first.get("track_count", 0)
+
+
 def test_path_probe_rejects_dead_content_uris() -> None:
     set_path_probe(_Probe({"content://ok/a.mp3"}))
     try:
