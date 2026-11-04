@@ -114,6 +114,17 @@ jobs:
           (cd dist && sha256sum Meridian-1.3.6-src.tar.gz | tee Meridian-1.3.6-src.tar.gz.sha256)
           ls -la dist
 
+      # Overwriting assets on an existing release leaves published_at stuck on the
+      # first publish day. Drop the release (keep the tag) so softprops creates a
+      # fresh one and the Releases page shows today's date.
+      - name: Drop prior GitHub Release (refresh publish date)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag || 'v1.3.6' }}"
+          gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes || true
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:

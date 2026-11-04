@@ -1,29 +1,23 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (**versionCode 150**, 2026-11-03).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-03**, **versionCode 151**).
 
 ## Downloads
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — ~36.2 MB, arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | `a0ccbefe1c126d18a029e7f77cffccfce939bb3a429f9b9a5d9a8e1701fa5424` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — ~0.4 MB, full tree at this release commit |
-| **Source SHA-256** | `747553fd6ac9b52e5453ef166efe1c68ba0c55937de611855f59e6b86a57b6c7` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
+| **APK SHA-256** | see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 151) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
-## What’s new in versionCode 150
+## What’s new in versionCode 151
 
-- Listen refreshes map moods after analyze (no stale playable cache)
-- Import Music/MediaStore when audio access is already granted
-- Play credit / Previous stay in sync after pause or hard cuts
-- Dig-in lens hit size capped so zoom doesn’t steal the map
-- Skip after a long listen is not counted as hate (8s rule)
-- Tap-to-play single-flight; auto-advance won’t overwrite a newer tap
-- Renew / Play Context use the latest lens aim
-- Denser label collision boxes, hover clears on lift, quieter mid-zoom bloom, pinch lock, two-finger pan
+- GitHub Releases publish date now refreshes when the APK is rebuilt (same tag, new release object)
+- Carries forward versionCode **150** bugfixes (Listen cache, import, play races, dig-in lens, skip 8s, single-flight play, Renew lens flush, map nits)
 
 ## Product (stable across 1.3.6)
 
@@ -33,7 +27,7 @@ Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#hig
 
 ## Notes
 
-- Minimum **Android 8.0 (API 26)**; **versionCode 150** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 151** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

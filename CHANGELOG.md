@@ -7,12 +7,15 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-03
 
-Published on this repo’s Releases page (**versionCode 150** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 151** / versionName 1.3.6). Feature overview: [README](README.md).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `a0ccbefe1c126d18a029e7f77cffccfce939bb3a429f9b9a5d9a8e1701fa5424`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~0.4 MB; SHA-256 `747553fd6ac9b52e5453ef166efe1c68ba0c55937de611855f59e6b86a57b6c7`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); SHA-256 in the release `.sha256` asset
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit; SHA-256 in the release `.sha256` asset
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 151
+- GitHub Releases **publish date** refreshes when the APK is rebuilt (workflow recreates the release object instead of only overwriting assets)
 
 ### versionCode 150
 - **Bugfix (10→2)**: Listen invalidates playable cache; import when audio already granted; engine.play before hardCut settle; dig-in lens hit capped; skip uses 8s rule; play single-flight + finished_current epoch; Renew/Play Context await latest lens; label boxes, hover clear, mid-zoom bloom trim, pinch lock, two-finger pan
