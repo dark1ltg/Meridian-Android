@@ -8,6 +8,20 @@
 
 Meridian is a **local, offline** music player for Android. Every track becomes a star on a mood map — **Shadow → Glow**, **Still → Kinetic**. Aim a lens where you want to be; a context queue builds from that neighborhood. No accounts. No streaming. Your files stay on the phone.
 
+<p align="center">
+  <img src="docs/screenshots/map.png" alt="Meridian mood map — lens aimed on the night sky" width="420" />
+</p>
+
+---
+
+## Screens
+
+| Context matrix | Queue |
+|:---:|:---:|
+| <img src="docs/screenshots/context.png" alt="NOW DEEP FILL SHELF context matrix" width="280" /> | <img src="docs/screenshots/queue.png" alt="Context queue from the lens" width="280" /> |
+| **Why this track** | **Library** |
+| <img src="docs/screenshots/why.png" alt="Honest why fit and mood reasons" width="280" /> | <img src="docs/screenshots/library.png" alt="Library settings — folders and Listen" width="280" /> |
+
 ---
 
 ## Highlights

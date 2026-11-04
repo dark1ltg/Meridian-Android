@@ -4,7 +4,7 @@ Meridian on **Android 8.0+ (API 26)**. Offline only. Same SQLite library, mood l
 
 Playback uses AndroidX **Media3 / ExoPlayer**. The engine is CPython 3.12 via **Chaquopy**, with `mutagen` and `numpy`. Qt, AppImage, and the desktop window are not shipped in the APK.
 
-Product overview (features first): **[README](../README.md)**.
+Product overview (features first): **[README](../README.md)** — includes device screenshots under [`screenshots/`](screenshots/).
 
 ## Features (what ships in the APK)
 
