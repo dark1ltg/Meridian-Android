@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Android 8+](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
-[![Latest](https://img.shields.io/badge/release-v1.3.6%20·%20vc150-informational.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
+[![Latest](https://img.shields.io/badge/release-v1.3.6%20·%20vc151-informational.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
 
 **Your library is a night sky. Navigate by feel.**
 
@@ -54,14 +54,14 @@ Offline only. No telemetry, no account, no cloud sync. GPL-3.0.
 
 ## Get the app
 
-**Current release:** [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) · **versionCode 150** · arm64-v8a · Android 8.0+
+**Current release:** [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) · **versionCode 151** · arm64-v8a · Android 8.0+
 
 | | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
-| **APK SHA-256** | `a0ccbefe1c126d18a029e7f77cffccfce939bb3a429f9b9a5d9a8e1701fa5424` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~0.4 MB) |
-| **Source SHA-256** | `747553fd6ac9b52e5453ef166efe1c68ba0c55937de611855f59e6b86a57b6c7` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) |
+| **APK SHA-256** | see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 151) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256

@@ -16,7 +16,7 @@ android {
         applicationId = "io.github.dark1ltg.meridian"
         minSdk = 26
         targetSdk = 34
-        versionCode = 150
+        versionCode = 151
         versionName = "1.3.6"
         ndk {
             val abi = (project.findProperty("abi") as String?)?.trim().orEmpty()
