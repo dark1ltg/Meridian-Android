@@ -399,6 +399,8 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
                     "path": "content://tree/doc/glow.mp3",
                     "title": "Glow.mp3",
                     "duration_ms": 185_000,
+                    "artist": "Nova",
+                    "album": "Night Sky",
                 },
                 {"path": "content://tree/doc/missing.mp3", "title": "Missing.mp3"},
                 {"path": "/not/a/uri.mp3", "title": "Nope"},
@@ -414,6 +416,8 @@ def test_add_uri_tracks_indexes_playable_saf(tmp_path: Path) -> None:
         glow = next(t for t in session.library.all_tracks() if "glow" in t.path)
         assert glow.duration_ms == 185_000
         assert glow.title == "Glow"
+        assert glow.artist == "Nova"
+        assert glow.album == "Night Sky"
     finally:
         session.close()
 
@@ -580,3 +584,44 @@ def test_content_tree_folder_add_and_remove(tmp_path: Path) -> None:
     finally:
         set_path_probe(None)
         session.close()
+
+
+def test_love_invalidates_playable_cache(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "glow.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    tid = session.library.all_tracks()[0].id
+    _ = session.snapshot()
+    assert session._playable_cache is not None
+    stale = session._playable_cache
+    session.love(tid)
+    assert session._playable_cache is None or session._playable_cache is not stale
+    snap = session.snapshot()
+    row = next(s for s in snap["stars"] if s["id"] == tid)
+    assert row.get("loved") is True
+    session.close()
+
+
+def test_finished_current_ignores_stale_ended_id(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "a.mp3").write_bytes(b"ID3")
+    (music / "b.mp3").write_bytes(b"ID3")
+    (music / "c.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    ids = [t.id for t in session.library.all_tracks()]
+    a, b, c = ids[0], ids[1], ids[2]
+    session.queue_ids = [a, b, c]
+    session.queue_index = 0
+    session.play(a)
+    session.skip(position_ms=60_000)  # now on b
+    assert session.queue_ids[session.queue_index] == b
+    # Late near-end callback for a must not advance again to c.
+    session.finished_current(ended_id=a)
+    assert session.queue_ids[session.queue_index] == b
+    session.close()

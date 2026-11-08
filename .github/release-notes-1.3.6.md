@@ -1,23 +1,31 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-07**, **versionCode 152**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-07**, **versionCode 153**).
 
 ## Downloads
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — ~36.2 MB, arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | `b3535b81e94b33050fc464d6be57e8ba3ba60b0fe7cdcbc71ad23d94e34c8866` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — ~5.5 MB, full tree at this release commit |
-| **Source SHA-256** | `8149fd70d606181ab1849e079c5c3af4f5c83bea266a6bd01286e68450c9b01f` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
+| **APK SHA-256** | see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 153) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) |
+| **Source SHA-256** | see [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
-## What’s new in versionCode 152
+## What’s new in versionCode 153
 
-- **Now Playing Previous / Next** — skip and previous call the queue engine and start the next file directly (MediaController `seekToNext` was a no-op on the single-item DualDeck timeline)
-- Lockscreen / notification skip keeps next/prev player commands advertised on session connect
+- **Listen no longer freezes transport** — Scan/Listen release the session lock during decode so play/skip/advance work mid-Analyze
+- **SAF-only cold start** boots the session without broad audio permission so the map is not empty
+- **Cold-start import** waits for the restored snapshot before importing MediaStore (no silent whole-library re-import)
+- **Love / pin / skip mood** invalidate the playable cache so Renew and the map see fresh rows
+- **Pause / unplug near end** bumps transport epoch so finished_current cannot auto-restart audio
+- **Near-end double-advance** ignored when `ended_id` no longer matches the current track
+- **Cancel → Scan** awaits abort before starting the next job
+- **MediaStore URI tracks** keep artist/album from the catalog
+- **Queue UI** refreshes from the engine when natural advance rebuilds the plan
+- **Notification permission** waits until the App gate (after onboarding)
 
 ## Product (stable across 1.3.6)
 
@@ -27,7 +35,7 @@ Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#hig
 
 ## Notes
 
-- Minimum **Android 8.0 (API 26)**; **versionCode 152** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 153** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

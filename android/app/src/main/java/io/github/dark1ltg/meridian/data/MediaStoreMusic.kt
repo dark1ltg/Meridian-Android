@@ -12,6 +12,8 @@ data class MediaStoreTrack(
     val title: String,
     /** MediaStore DURATION in ms when known (0 if missing). */
     val durationMs: Long = 0L,
+    val artist: String = "",
+    val album: String = "",
 )
 
 /** MediaStore audio → folders for os.walk and/or content URI tracks. */
@@ -31,6 +33,8 @@ object MediaStoreMusic {
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.DISPLAY_NAME,
             MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.DURATION,
         ).apply {
@@ -53,6 +57,8 @@ object MediaStoreMusic {
                 val relCol = cursor.getColumnIndex(MediaStore.Audio.Media.RELATIVE_PATH)
                 val nameCol = cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
                 val titleCol = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
+                val artistCol = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
+                val albumCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM)
                 val volCol = cursor.getColumnIndex(MediaStore.Audio.Media.VOLUME_NAME)
                 val durCol = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION)
                 while (cursor.moveToNext() && out.size < max) {
@@ -61,6 +67,8 @@ object MediaStoreMusic {
                     val rel = if (relCol >= 0) cursor.getString(relCol) else null
                     val name = if (nameCol >= 0) cursor.getString(nameCol) else null
                     val title = if (titleCol >= 0) cursor.getString(titleCol) else null
+                    val artist = if (artistCol >= 0) cursor.getString(artistCol).orEmpty() else ""
+                    val album = if (albumCol >= 0) cursor.getString(albumCol).orEmpty() else ""
                     val volume = if (volCol >= 0) cursor.getString(volCol) else null
                     val durationMs = if (durCol >= 0) cursor.getLong(durCol).coerceAtLeast(0L) else 0L
                     val guessed = resolvePath(data, volume, rel, name)
@@ -72,7 +80,13 @@ object MediaStoreMusic {
                     }
                     val label = (title ?: name ?: SafIngest.displayTitle(File(playPath).name))
                         .ifBlank { "Track" }
-                    out += MediaStoreTrack(playPath, SafIngest.displayTitle(label), durationMs)
+                    out += MediaStoreTrack(
+                        playPath,
+                        SafIngest.displayTitle(label),
+                        durationMs,
+                        artist = artist.trim().let { if (it.equals("<unknown>", ignoreCase = true)) "" else it },
+                        album = album.trim(),
+                    )
                 }
             }
         } catch (_: SecurityException) {

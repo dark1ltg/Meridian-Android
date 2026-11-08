@@ -36,6 +36,9 @@ _STATE_NAME = "android_ui.json"
 _LENS_MOVE_EPS = 0.015
 _MAX_MAP_STARS = 900
 _path_probe = None
+# Shared with android_bridge: transport holds this for the whole call; Scan/Listen
+# only take it around begin/end/rebuild so play/skip work during Analyze.
+STATE_LOCK = threading.RLock()
 
 
 def set_path_probe(probe: object | None) -> None:
@@ -401,17 +404,21 @@ class AndroidSession:
             # Trust MediaStore/SAF URIs at index time; play-time PathProbe verifies.
             name = title or path.rsplit("/", 1)[-1]
             duration_ms = 0
+            artist = ""
+            album = ""
             if isinstance(raw, dict):
                 try:
                     duration_ms = int(float(raw.get("duration_ms") or 0))
                 except (TypeError, ValueError):
                     duration_ms = 0
+                artist = str(raw.get("artist") or "").strip()
+                album = str(raw.get("album") or "").strip()
             lib.upsert_track(
                 {
                     "path": path,
                     "title": Path(name).stem or name or "Unknown",
-                    "artist": "",
-                    "album": "",
+                    "artist": artist,
+                    "album": album,
                     "albumartist": "",
                     "genre": "",
                     "duration_ms": max(0, duration_ms),
@@ -522,7 +529,8 @@ class AndroidSession:
 
     def scan(self, force: bool = False) -> dict:
         lib = self._require()
-        self._begin_job("scan", "Looking through folders…")
+        with STATE_LOCK:
+            self._begin_job("scan", "Looking through folders…")
         try:
             added = scan_library(
                 lib,
@@ -530,43 +538,52 @@ class AndroidSession:
                 abort=self._abort.is_set,
                 progress=self._on_scan_progress,
             )
-            if self._abort.is_set():
-                self.status = "Scan stopped"
-            else:
-                self.status = f"Indexed {added} new or changed files · context queue refreshed"
-            self._invalidate_playable_cache()
-            self._rebuild_queue(keep_current=True)
+            with STATE_LOCK:
+                if self._abort.is_set():
+                    self.status = "Scan stopped"
+                else:
+                    self.status = f"Indexed {added} new or changed files · context queue refreshed"
+                self._invalidate_playable_cache()
+                self._rebuild_queue(keep_current=True)
         finally:
-            self._end_job()
-        return self.snapshot()
+            with STATE_LOCK:
+                self._end_job()
+        with STATE_LOCK:
+            return self.snapshot()
 
     def analyze(self) -> dict:
         lib = self._require()
-        self._begin_job("listen", "Listening…")
+        with STATE_LOCK:
+            self._begin_job("listen", "Listening…")
         try:
             # Two Listen workers: each thread keeps its own decoder session.
             # Same mood windows as desktop — parallel files only.
+            # STATE_LOCK is released for the long decode so play/skip can run.
             analyze_pending(
                 lib,
                 abort=self._abort.is_set,
                 progress=self._on_listen_progress,
                 workers=2,
             )
-            if self._abort.is_set():
-                self.status = "Listen stopped"
-            else:
-                self.status = "Mood listen finished · context queue refreshed"
-            # Analyze writes new moods into SQLite; drop the cached Track rows so
-            # the map/queue show Listen results instead of pre-Listen guesses.
-            self._invalidate_playable_cache()
-            self._rebuild_queue(keep_current=True)
+            with STATE_LOCK:
+                if self._abort.is_set():
+                    self.status = "Listen stopped"
+                else:
+                    self.status = "Mood listen finished · context queue refreshed"
+                # Analyze writes new moods into SQLite; drop the cached Track rows so
+                # the map/queue show Listen results instead of pre-Listen guesses.
+                self._invalidate_playable_cache()
+                self._rebuild_queue(keep_current=True)
         finally:
-            self._end_job()
-        return self.snapshot()
+            with STATE_LOCK:
+                self._end_job()
+        with STATE_LOCK:
+            return self.snapshot()
 
     def rescan(self) -> dict:
         lib = self._require()
-        self._begin_job("rescan", "Rescanning…")
+        with STATE_LOCK:
+            self._begin_job("rescan", "Rescanning…")
         try:
             lib.mark_all_pending_analysis()
             added = scan_library(
@@ -576,23 +593,27 @@ class AndroidSession:
                 progress=self._on_scan_progress,
             )
             if not self._abort.is_set():
-                self._job_kind = "listen"
-                self._job_message = "Listening…"
+                with STATE_LOCK:
+                    self._job_kind = "listen"
+                    self._job_message = "Listening…"
                 analyze_pending(
                     lib,
                     abort=self._abort.is_set,
                     progress=self._on_listen_progress,
                     workers=2,
                 )
-            if self._abort.is_set():
-                self.status = "Rescan stopped"
-            else:
-                self.status = f"Rescan complete ({added} files refreshed) · context queue refreshed"
-            self._invalidate_playable_cache()
-            self._rebuild_queue(keep_current=True)
+            with STATE_LOCK:
+                if self._abort.is_set():
+                    self.status = "Rescan stopped"
+                else:
+                    self.status = f"Rescan complete ({added} files refreshed) · context queue refreshed"
+                self._invalidate_playable_cache()
+                self._rebuild_queue(keep_current=True)
         finally:
-            self._end_job()
-        return self.snapshot()
+            with STATE_LOCK:
+                self._end_job()
+        with STATE_LOCK:
+            return self.snapshot()
 
     def _on_scan_progress(self, name: str, index: int = 0, total: int = 0) -> None:
         self._job_current = int(index)
@@ -615,11 +636,13 @@ class AndroidSession:
     def pin(self, track_id: int, valence: float, energy: float) -> dict:
         # Desktop: pin refreshes the matrix only — hold the live context queue.
         self._require().set_mood(int(track_id), _clip01(valence), _clip01(energy), pinned=True)
+        self._invalidate_playable_cache()
         self.status = "Mood pinned"
         return self.snapshot()
 
     def love(self, track_id: int) -> dict:
         loved = self._require().toggle_loved(int(track_id))
+        self._invalidate_playable_cache()
         self.status = "Loved" if loved else "Unloved"
         return self.snapshot()
 
@@ -711,9 +734,15 @@ class AndroidSession:
             self._save_ui_state()
         return self._advance_queue(record_next=True)
 
-    def finished_current(self) -> dict:
-        """Natural end — finish-nudge the outgoing track when the fade settles."""
+    def finished_current(self, ended_id: int = 0) -> dict:
+        """Natural end — finish-nudge the outgoing track when the fade settles.
+
+        [ended_id] is the media that actually reached the end. If the UI already
+        skipped/played away from it, do not advance again (avoids double-step).
+        """
         current = self._current_track()
+        if ended_id and current is not None and int(current.id) != int(ended_id):
+            return self.snapshot()
         outgoing_id = current.id if current else None
         self.skip_pressure = max(0.0, self.skip_pressure - 0.12)
         snap = self._advance_queue(record_next=False)
@@ -801,6 +830,8 @@ class AndroidSession:
             lens_y=self.lens_y,
             skipped=skipped,
         )
+        # Mood / skip counters live on Track rows used by Renew and the map.
+        self._invalidate_playable_cache()
 
     def _credit_listen(self, track_id: int, position_ms: int) -> None:
         skipped = int(position_ms) < 8000
@@ -813,6 +844,7 @@ class AndroidSession:
         self._require().record_play(track_id, time.time())
         self.played_history.append(track_id)
         self.played_history = self.played_history[-48:]
+        self._invalidate_playable_cache()
 
     def _advance_queue(self, *, record_next: bool) -> dict:
         lib = self._require()

@@ -9,6 +9,14 @@ class Engine {
     }
 
     fun call(method: String, payload: JSONObject = JSONObject()): EngineSnapshot {
+        // Heavy Scan/Listen must not hold the transport lock for the whole job —
+        // otherwise play/skip/finished_current freeze until Analyze finishes.
+        if (method in HEAVY) {
+            synchronized(heavyLock) {
+                val raw = bridge.callAttr("call", method, payload.toString()).toString()
+                return JSONObject(raw).toSnapshot()
+            }
+        }
         synchronized(lock) {
             val raw = bridge.callAttr("call", method, payload.toString()).toString()
             return JSONObject(raw).toSnapshot()
@@ -27,5 +35,7 @@ class Engine {
 
     companion object {
         private val lock = Any()
+        private val heavyLock = Any()
+        private val HEAVY = setOf("scan", "analyze", "rescan")
     }
 }

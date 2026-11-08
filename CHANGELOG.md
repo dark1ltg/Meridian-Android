@@ -7,12 +7,15 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-03
 
-Published on this repo’s Releases page (**versionCode 152** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 153** / versionName 1.3.6). Feature overview: [README](README.md).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `b3535b81e94b33050fc464d6be57e8ba3ba60b0fe7cdcbc71ad23d94e34c8866`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `8149fd70d606181ab1849e079c5c3af4f5c83bea266a6bd01286e68450c9b01f`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); SHA-256 in the release `.sha256` asset
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit; SHA-256 in the release `.sha256` asset
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 153
+- **Bugfix (10→1)**: Listen unlocks transport mid-Analyze; SAF cold-start boot; late-grant import waits for snapshot; love/pin/skip invalidate playable cache; pause/unplug cancels near-end autoplay; finished_current `ended_id` prevents double-advance; abort awaits before new Scan; MediaStore artist/album on URI tracks; Queue refresh on natural rebuild; notification prompt after onboarding
 
 ### versionCode 152
 - **Now Playing Previous / Next**: UI skip/previous call the Python queue then `player.play` (MediaController `seekToNext` no-oped on the single-item DualDeck timeline); session connect keeps next/prev commands for notifications

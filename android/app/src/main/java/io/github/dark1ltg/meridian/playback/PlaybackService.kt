@@ -45,7 +45,7 @@ class PlaybackService : MediaSessionService() {
     private val noisy = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
-                decks?.pauseBoth()
+                pauseTransport()
             }
         }
     }
@@ -54,7 +54,7 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         focus = PlaybackAudioFocus(
             this,
-            onHold = { decks?.pauseBoth() },
+            onHold = { pauseTransport() },
             onResume = { decks?.resumeActive() },
         )
         val a = newExo()
@@ -64,8 +64,8 @@ class PlaybackService : MediaSessionService() {
             b = b,
             main = main,
             onActiveChanged = { exo -> session?.setPlayer(QueuePlayer(exo)) },
-            onNearEnd = { advance("finished_current") },
-            onEnded = { advance("finished_current") },
+            onNearEnd = { advanceFinished() },
+            onEnded = { advanceFinished() },
             onError = { id ->
                 val payload = JSONObject()
                 id?.toIntOrNull()?.let { payload.put("id", it) }
@@ -184,6 +184,20 @@ class PlaybackService : MediaSessionService() {
         return JSONObject().put("position_ms", decks?.active?.currentPosition ?: 0L)
     }
 
+    /** Pause / unplug: bump epoch so a late finished_current cannot restart audio. */
+    private fun pauseTransport() {
+        transportEpoch += 1
+        advancing = false
+        decks?.pauseBoth()
+    }
+
+    private fun advanceFinished() {
+        val endedId = decks?.active?.currentMediaItem?.mediaId?.toIntOrNull() ?: 0
+        val payload = JSONObject()
+        if (endedId > 0) payload.put("ended_id", endedId)
+        advance("finished_current", payload)
+    }
+
     private fun advance(method: String, payload: JSONObject = JSONObject()) {
         if (method == "finished_current" && advancing) return
         if (method == "finished_current") advancing = true
@@ -194,7 +208,7 @@ class PlaybackService : MediaSessionService() {
                 val next = snap.current
                 main.post {
                     if (method == "finished_current") advancing = false
-                    // UI already started a newer track — drop this auto-advance.
+                    // UI already started a newer track, or user paused/unplugged — drop autoplay.
                     if (method == "finished_current" && epochAtStart != transportEpoch) return@post
                     if (next != null && next.path.isNotBlank()) {
                         playTrack(next)
@@ -277,6 +291,8 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun pause() {
+            transportEpoch += 1
+            advancing = false
             decks?.pauseActive()
         }
 
@@ -290,6 +306,8 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun stop() {
+            transportEpoch += 1
+            advancing = false
             decks?.stopAll()
         }
 
