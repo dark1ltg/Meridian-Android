@@ -69,6 +69,6 @@ class SafIngestTest {
 
     @Test
     fun maxFilesMatchesWalkBudget() {
-        assertEquals(8_000, SafIngest.MAX_FILES)
+        assertEquals(50_000, SafIngest.MAX_FILES)
     }
 }

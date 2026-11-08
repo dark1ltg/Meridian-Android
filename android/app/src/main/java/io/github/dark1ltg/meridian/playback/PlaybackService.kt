@@ -181,7 +181,9 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun skipPayload(): JSONObject {
-        return JSONObject().put("position_ms", decks?.active?.currentPosition ?: 0L)
+        val payload = JSONObject().put("position_ms", decks?.active?.currentPosition ?: 0L)
+        decks?.active?.currentMediaItem?.mediaId?.toIntOrNull()?.let { payload.put("from_id", it) }
+        return payload
     }
 
     /** Pause / unplug: bump epoch so a late finished_current cannot restart audio. */
@@ -201,6 +203,8 @@ class PlaybackService : MediaSessionService() {
     private fun advance(method: String, payload: JSONObject = JSONObject()) {
         if (method == "finished_current" && advancing) return
         if (method == "finished_current") advancing = true
+        // Skip/previous/error must invalidate an in-flight finished_current autoplay.
+        if (method != "finished_current") transportEpoch += 1
         val epochAtStart = transportEpoch
         io.execute {
             try {
@@ -208,8 +212,8 @@ class PlaybackService : MediaSessionService() {
                 val next = snap.current
                 main.post {
                     if (method == "finished_current") advancing = false
-                    // UI already started a newer track, or user paused/unplugged — drop autoplay.
-                    if (method == "finished_current" && epochAtStart != transportEpoch) return@post
+                    // A newer tap/skip/pause owns the decks — drop this stale engine result.
+                    if (epochAtStart != transportEpoch) return@post
                     if (next != null && next.path.isNotBlank()) {
                         playTrack(next)
                     } else {

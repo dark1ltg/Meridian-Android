@@ -91,6 +91,8 @@ class DualDeck(
 
     fun pauseBoth() {
         if (crossfading) finishFade(immediate = true, notify = true)
+        // Allow STATE_ENDED after resume if we paused inside the near-end window.
+        advanceEmitted = false
         a.pause()
         b.pause()
     }
@@ -98,6 +100,8 @@ class DualDeck(
     fun resumeActive() {
         active.play()
     }
+
+    fun hasMedia(): Boolean = active.mediaItemCount > 0 && active.currentMediaItem != null
 
     fun stopAll(notifySettle: Boolean = true) {
         if (crossfading) finishFade(immediate = true, notify = notifySettle)
