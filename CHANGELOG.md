@@ -5,7 +5,7 @@ All notable Meridian releases are listed here.
 - **Android APK:** [dark1ltg/Meridian-Android/releases](https://github.com/dark1ltg/Meridian-Android/releases)
 - **Linux AppImage:** [dark1ltg/Meridian/releases](https://github.com/dark1ltg/Meridian/releases)
 
-## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-03
+## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-07
 
 Published on this repo’s Releases page (**versionCode 154** / versionName 1.3.6). Feature overview: [README](README.md).
 

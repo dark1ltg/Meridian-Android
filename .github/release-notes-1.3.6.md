@@ -29,7 +29,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 
 ## Product (stable across 1.3.6)
 
-Mood map with dig-in zoom · on-device Listen · Renew / Play Context · NOW/DEEP/FILL/SHELF matrix · ~3s crossfade · lockscreen playback · SAF folders · MediaStore import · Focus/Wander/Charge/Dim · honest “why”
+Mood map with dig-in zoom · on-device Listen (play stays live) · Renew / Play Context · NOW/DEEP/FILL/SHELF matrix · ~3s crossfade · Now Playing / lockscreen skip · SAF + MediaStore import (artist/album, 50k cap) · Focus/Wander/Charge/Dim · honest “why”
 
 Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#highlights) · history: [CHANGELOG](https://github.com/dark1ltg/Meridian-Android/blob/main/CHANGELOG.md)
 

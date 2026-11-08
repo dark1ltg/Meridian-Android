@@ -11,11 +11,11 @@ Product overview (features first): **[README](../README.md)** — includes devic
 | Area | What you get |
 |---|---|
 | **Mood map** | Nebula sky: pan empty space, drag the lens ring to aim, pinch inside to resize, pinch outside to dig in ~5×; tap a star to play, drag to pin. Titles appear when zoomed and stagger when packed. Smooth aiming on Titan 2–class (1440×1440). |
-| **Listen** | After Allow (or Scan / Add folder / Index), Meridian indexes, scans, then waveform-listens automatically — same intro/mid/late honesty as desktop **1.3.6**. |
-| **Context queue** | **Renew** rebuilds from the listen matrix (not shuffle); **Play Context** syncs a stale queue to the lens; modes Focus / Wander / Charge / Dim. |
+| **Listen** | After Allow (or Scan / Add folder / Index), Meridian indexes, scans, then waveform-listens automatically — same intro/mid/late honesty as desktop **1.3.6**. Play / skip / the map stay live during Analyze. |
+| **Context queue** | **Renew** rebuilds from the listen matrix (not shuffle); **Play Context** syncs a stale queue to the lens without restarting the loaded track; modes Focus / Wander / Charge / Dim. |
 | **Matrix** | Context tab: NOW / DEEP / FILL / SHELF on the night sky. |
-| **Playback** | ~3s dual-deck crossfade; lockscreen + notification session; skip/previous through the queue; device lock required to open the UI from media controls. |
-| **Library** | MediaStore + SAF folders with persistable grants; Remove drops folder, tracks, and grant; progress shows filename + **N of total**. |
+| **Playback** | ~3s dual-deck crossfade; Now Playing / lockscreen / notification Previous–Next drive the queue; cold-start Play loads the restored current; device lock required to open the UI from media controls. |
+| **Library** | MediaStore + SAF folders with persistable grants (folder-only libraries boot without broad audio permission); Remove drops folder, tracks, and grant; URI tracks keep artist/album/duration; unreadable files skip forward; import cap **50,000** with a truncation note; progress shows filename + **N of total**. |
 | **Chrome** | Map / Queue / Context / More; love, volume, honest “why”, debounced search; Back backgrounds without splash replay. |
 
 Native stack in the release APK: `libmeridian_aubio.so`, `libffmpegJNI.so`, `libmeridian_pcm.so`. UI type is Ubuntu Sans / Ubuntu Condensed (`resources/fonts/`, Ubuntu Font Licence 1.0).
@@ -32,14 +32,14 @@ Release CI builds `libffmpegJNI.so` via `android/scripts/build-media3-ffmpeg.sh`
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 154**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 154**, published **2026-11-07**).
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB)
-| **APK SHA-256** | `954832510cad89ee06a54763ed6c21e833f6f4c8abc61128ceb9913e8e7978aa`
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB)
-| **Source SHA-256** | `0f4e30044d2a59cc4e63fea5267f3c4bd49916491265a60571daaa69874dc48d`
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
+| **APK SHA-256** | `954832510cad89ee06a54763ed6c21e833f6f4c8abc61128ceb9913e8e7978aa` |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB) |
+| **Source SHA-256** | `0f4e30044d2a59cc4e63fea5267f3c4bd49916491265a60571daaa69874dc48d` |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 
@@ -91,11 +91,11 @@ Desktop shells out to host `ffmpeg` (`-ac 1 -ar 11025 -f f32le`). Android matche
 | API | Permission |
 | --- | --- |
 | 26–32 | `READ_EXTERNAL_STORAGE` |
-| 33+ | `READ_MEDIA_AUDIO`, `POST_NOTIFICATIONS` |
+| 33+ | `READ_MEDIA_AUDIO`; `POST_NOTIFICATIONS` is optional and asked once after onboarding (not over splash) |
 | playback | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (lockscreen + background audio) |
-| folders | persistable `OpenDocumentTree` read grant |
+| folders | persistable `OpenDocumentTree` read grant (SAF-only libraries do not need `READ_MEDIA_AUDIO`) |
 
-Nothing leaves the phone. There is no account, telemetry, or store sync.
+Nothing leaves the phone. There is no account, telemetry, or store sync. Import walks at most **50,000** files per MediaStore/SAF pass and says so if the tree is larger.
 
 ## Layout
 
