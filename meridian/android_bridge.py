@@ -38,12 +38,12 @@ _METHODS = {
         int(p.get("position_ms") or 0),
         bool(p.get("natural_advance")),
     ),
-    "skip": lambda p: _SESSION.skip(int(p.get("position_ms") or 0)),
+    "skip": lambda p: _SESSION.skip(int(p.get("position_ms") or 0), int(p.get("from_id") or 0)),
     "finished_current": lambda p: _SESSION.finished_current(int(p.get("ended_id") or 0)),
     "previous": lambda _p: _SESSION.previous(),
     "fade_settled": lambda _p: _SESSION.fade_settled(),
     "playback_failed": lambda p: _SESSION.playback_failed(int(p.get("id") or 0)),
-    "request_abort": lambda _p: _SESSION.request_abort(),
+    "request_abort": lambda p: _SESSION.request_abort(p.get("serial")),
     "progress": lambda _p: _SESSION.progress(),
 }
 

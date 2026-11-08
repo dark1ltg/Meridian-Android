@@ -29,8 +29,9 @@ class Engine {
         return JSONObject(raw).toJob()
     }
 
-    fun abort() {
-        bridge.callAttr("call", "request_abort", "{}")
+    fun abort(serial: Int = 0) {
+        val payload = if (serial > 0) JSONObject().put("serial", serial) else JSONObject()
+        bridge.callAttr("call", "request_abort", payload.toString())
     }
 
     companion object {

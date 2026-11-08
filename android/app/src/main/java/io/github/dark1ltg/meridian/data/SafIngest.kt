@@ -1,6 +1,7 @@
 package io.github.dark1ltg.meridian.data
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
@@ -9,11 +10,15 @@ import java.security.MessageDigest
 data class SafTrack(
     val uri: String,
     val title: String,
+    val artist: String = "",
+    val album: String = "",
+    val durationMs: Long = 0L,
 )
 
 data class SafIngestResult(
     val folders: List<String>,
     val uriTracks: List<SafTrack>,
+    val truncated: Boolean = false,
 )
 
 /**
@@ -21,7 +26,7 @@ data class SafIngestResult(
  * document has no readable `/storage/…` path (USB/SD without a mount).
  */
 object SafIngest {
-    const val MAX_FILES = 8_000
+    const val MAX_FILES = 50_000
     private val audioExt = setOf("mp3", "flac", "ogg", "opus", "m4a", "wav", "aac", "wma", "aiff")
 
     fun ingest(context: Context, tree: Uri, maxFiles: Int = MAX_FILES): SafIngestResult {
@@ -29,6 +34,7 @@ object SafIngest {
         val readable = LinkedHashSet<String>()
         val uriTracks = ArrayList<SafTrack>()
         var seen = 0
+        var truncated = false
         // Prefer the tree root itself when Android exposes a real path — keeps
         // Settings → Folders showing one row the user can remove.
         val rootPath = FolderPaths.fromTreeUri(tree.toString())
@@ -36,7 +42,10 @@ object SafIngest {
             readable += rootPath
         }
         walk(root, "") { doc, _ ->
-            if (seen >= maxFiles) return@walk
+            if (seen >= maxFiles) {
+                truncated = true
+                return@walk
+            }
             val name = doc.name ?: return@walk
             val ext = name.substringAfterLast('.', "").lowercase()
             if (ext !in audioExt && doc.type?.startsWith("audio/") != true) return@walk
@@ -45,7 +54,7 @@ object SafIngest {
             if (guessed != null) {
                 File(guessed).parentFile?.absolutePath?.let { readable += it }
             } else {
-                uriTracks += SafTrack(doc.uri.toString(), displayTitle(name))
+                uriTracks += readTags(context, doc.uri, displayTitle(name))
             }
         }
         var folders = MediaStoreMusic.dropNested(readable.toList())
@@ -57,6 +66,7 @@ object SafIngest {
         return SafIngestResult(
             folders = folders,
             uriTracks = uriTracks.distinctBy { it.uri },
+            truncated = truncated,
         )
     }
 
@@ -75,6 +85,26 @@ object SafIngest {
         val md = MessageDigest.getInstance("SHA-1")
         val hex = md.digest(uri.toByteArray()).joinToString("") { "%02x".format(it) }
         return hex.take(16)
+    }
+
+    internal fun readTags(context: Context, uri: Uri, fallbackTitle: String): SafTrack {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(context, uri)
+            val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+                ?.trim().orEmpty().ifBlank { fallbackTitle }
+            val artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+                ?.trim().orEmpty()
+            val album = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+                ?.trim().orEmpty()
+            val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                ?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+            SafTrack(uri.toString(), title, artist, album, durationMs)
+        } catch (_: Throwable) {
+            SafTrack(uri.toString(), fallbackTitle)
+        } finally {
+            runCatching { retriever.release() }
+        }
     }
 
     private fun walk(dir: DocumentFile, rel: String, visit: (DocumentFile, String) -> Unit) {

@@ -625,3 +625,45 @@ def test_finished_current_ignores_stale_ended_id(tmp_path: Path) -> None:
     session.finished_current(ended_id=a)
     assert session.queue_ids[session.queue_index] == b
     session.close()
+
+
+def test_skip_from_id_does_not_double_advance(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "a.mp3").write_bytes(b"ID3")
+    (music / "b.mp3").write_bytes(b"ID3")
+    (music / "c.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    ids = [t.id for t in session.library.all_tracks()]
+    a, b, c = ids[0], ids[1], ids[2]
+    session.queue_ids = [a, b, c]
+    session.queue_index = 0
+    session.play(a)
+    session.finished_current(ended_id=a)  # now on b
+    assert session.queue_ids[session.queue_index] == b
+    session.skip(position_ms=1_000, from_id=a)
+    assert session.queue_ids[session.queue_index] == b
+    session.close()
+
+
+def test_abort_serial_ignores_stale_cancel(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "glow.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session._begin_job("scan", "Scanning…")
+    first = session._job_serial
+    session.request_abort(first)
+    assert session._abort.is_set()
+    session._begin_job("listen", "Listening…")
+    second = session._job_serial
+    assert second != first
+    assert not session._abort.is_set()
+    session.request_abort(first)
+    assert not session._abort.is_set()
+    session.request_abort(second)
+    assert session._abort.is_set()
+    session.close()

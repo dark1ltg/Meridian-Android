@@ -178,6 +178,7 @@ class AndroidSession:
         self._job_message = ""
         self._job_current = 0
         self._job_total = 0
+        self._job_serial = 0
         self._xfade_out: int | None = None
         self._xfade_settle_finish = False
         self._pending_play: int | None = None
@@ -490,7 +491,14 @@ class AndroidSession:
         self.status = "Folder removed"
         return self.snapshot()
 
-    def request_abort(self) -> dict:
+    def request_abort(self, serial: int | None = 0) -> dict:
+        """Abort only the job [serial] names. A late abort must not cancel a newer Scan."""
+        try:
+            want = int(serial or 0)
+        except (TypeError, ValueError):
+            want = 0
+        if want <= 0 or want != self._job_serial or not self._job_kind:
+            return self.progress()
         self._abort.set()
         request_decode_abort()
         self._job_message = "Stopping…"
@@ -511,9 +519,11 @@ class AndroidSession:
             "current": self._job_current,
             "total": self._job_total,
             "running": bool(self._job_kind),
+            "serial": self._job_serial,
         }
 
     def _begin_job(self, kind: str, message: str) -> None:
+        self._job_serial += 1
         self._abort.clear()
         self._job_kind = kind
         self._job_message = message
@@ -703,8 +713,12 @@ class AndroidSession:
         self._save_ui_state()
         return self.snapshot()
 
-    def skip(self, position_ms: int = 0) -> dict:
+    def skip(self, position_ms: int = 0, from_id: int = 0) -> dict:
         lib = self._require()
+        current = self._current_track()
+        # Near-end finished_current may already have advanced; don't skip the next song too.
+        if from_id and current is not None and int(current.id) != int(from_id):
+            return self.snapshot()
         if self._xfade_out is not None:
             outgoing = self._xfade_out
             settle = self._xfade_settle_finish

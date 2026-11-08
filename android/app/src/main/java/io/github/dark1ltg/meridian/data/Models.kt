@@ -31,6 +31,7 @@ data class JobProgress(
     val current: Int = 0,
     val total: Int = 0,
     val running: Boolean = false,
+    val serial: Int = 0,
 ) {
     val fraction: Float
         get() = if (total > 0) (current.toFloat() / total).coerceIn(0f, 1f) else 0f
@@ -133,6 +134,7 @@ fun JSONObject.toJob(): JobProgress {
         current = job.optInt("current"),
         total = job.optInt("total"),
         running = job.optBoolean("running"),
+        serial = job.optInt("serial"),
     )
 }
 

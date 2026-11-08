@@ -65,6 +65,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     private val playGate = Any()
     private var pendingLens: Triple<Float, Float, Float>? = null
     private val bootMutex = Mutex()
+    private val lensMutex = Mutex()
     private var booted = false
     /** True after the first successful engine ensure — used to avoid empty-library races. */
     val hasBooted: Boolean get() = booted
@@ -126,11 +127,14 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Stop any in-flight Scan/Listen (cancel UI job + abort flag). */
+    /** Stop any in-flight Scan/Listen (cancel UI job + abort that job's serial only). */
     private fun stopWork(message: String? = null) {
+        val serial = _state.value.job.serial
         work?.cancel()
         work = null
-        viewModelScope.launch(Dispatchers.IO) { runCatching { engine.abort() } }
+        viewModelScope.launch(Dispatchers.IO) {
+            if (serial > 0) runCatching { engine.abort(serial) }
+        }
         _state.update {
             it.copy(
                 busy = false,
@@ -141,14 +145,17 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Replace in-flight work: cancel, await abort, then run [block].
-     * Awaiting abort avoids a late request_abort cancelling the newly started job.
+     * Replace in-flight work: cancel, abort the previous job serial, then run [block].
+     * Abort carries the old serial so a late cancel cannot stop the new Scan/Listen.
      */
     private fun startWork(message: String, block: suspend () -> Unit) {
+        val serial = _state.value.job.serial
         work?.cancel()
         work = null
         work = viewModelScope.launch {
-            withContext(Dispatchers.IO) { runCatching { engine.abort() } }
+            if (serial > 0) {
+                withContext(Dispatchers.IO) { runCatching { engine.abort(serial) } }
+            }
             ensureBoot()
             _state.update { it.copy(busy = true, message = message, job = JobProgress()) }
             try {
@@ -168,20 +175,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         if (lensFlush?.isActive == true) return
         lensFlush = viewModelScope.launch {
             ensureBoot()
-            while (isActive) {
-                val next = pendingLens ?: break
-                pendingLens = null
-                val snap = withContext(Dispatchers.IO) {
-                    engine.call(
-                        "set_lens",
-                        JSONObject()
-                            .put("x", next.first.toDouble())
-                            .put("y", next.second.toDouble())
-                            .put("radius", next.third.toDouble()),
-                    )
-                }
-                applySnap(snap)
-            }
+            flushPendingLens()
         }
     }
 
@@ -220,21 +214,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
             }
             if (gen != playGeneration) return@launch
             if (!reachable) {
-                _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
-                val next = withContext(Dispatchers.IO + NonCancellable) {
-                    synchronized(playGate) {
-                        if (gen != playGeneration) return@withContext null
-                        engine.call("playback_failed", JSONObject().put("id", toPlay.id))
-                    }
-                } ?: return@launch
-                if (gen != playGeneration) return@launch
-                applySnap(next)
-                next.current?.let { cand ->
-                    val ok = withContext(Dispatchers.IO) {
-                        PathProbe(getApplication()).reachable(cand.path)
-                    }
-                    if (gen == playGeneration && ok) player.play(cand)
-                }
+                playReachable(toPlay, gen)
                 return@launch
             }
             player.play(toPlay)
@@ -279,8 +259,12 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             ensureBoot()
             val positionMs = _clock.value.positionMs
+            val fromId = _state.value.snapshot.current?.id ?: 0
             val snap = withContext(Dispatchers.IO) {
-                engine.call("skip", JSONObject().put("position_ms", positionMs))
+                engine.call(
+                    "skip",
+                    JSONObject().put("position_ms", positionMs).put("from_id", fromId),
+                )
             }
             applySnap(snap)
             playSnapCurrent(snap)
@@ -307,25 +291,39 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun playSnapCurrent(snap: EngineSnapshot) {
         val track = snap.current ?: return
-        val reachable = withContext(Dispatchers.IO) {
-            PathProbe(getApplication()).reachable(track.path)
-        }
-        if (!reachable) {
+        playReachable(track)
+    }
+
+    /** Skip dead files until one opens, or the queue is exhausted. */
+    private suspend fun playReachable(start: TrackRow, gen: Int? = null) {
+        var candidate: TrackRow? = start
+        repeat(32) {
+            if (gen != null && gen != playGeneration) return
+            val track = candidate ?: return
+            val ok = withContext(Dispatchers.IO) {
+                PathProbe(getApplication()).reachable(track.path)
+            }
+            if (gen != null && gen != playGeneration) return
+            if (ok) {
+                player.play(track)
+                _clock.value = PlaybackClock(positionMs = 0L, durationMs = track.durationMs)
+                return
+            }
             _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
-            val next = withContext(Dispatchers.IO) {
-                engine.call("playback_failed", JSONObject().put("id", track.id))
-            }
-            applySnap(next)
-            next.current?.let { cand ->
-                val ok = withContext(Dispatchers.IO) {
-                    PathProbe(getApplication()).reachable(cand.path)
+            val next = withContext(Dispatchers.IO + NonCancellable) {
+                if (gen != null) {
+                    synchronized(playGate) {
+                        if (gen != playGeneration) return@withContext null
+                        engine.call("playback_failed", JSONObject().put("id", track.id))
+                    }
+                } else {
+                    engine.call("playback_failed", JSONObject().put("id", track.id))
                 }
-                if (ok) player.play(cand)
-            }
-            return
+            } ?: return
+            if (gen != null && gen != playGeneration) return
+            applySnap(next)
+            candidate = next.current?.takeIf { it.id != track.id }
         }
-        player.play(track)
-        _clock.value = PlaybackClock(positionMs = 0L, durationMs = track.durationMs)
     }
 
     fun seek(ms: Long) {
@@ -350,6 +348,11 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                 ?: synced.now.firstOrNull()
                 ?: synced.stars.firstOrNull()
                 ?: return@launch
+            val loaded = player.player?.currentMediaItem?.mediaId?.toIntOrNull()
+            if (loaded == start.id && (player.player?.mediaItemCount ?: 0) > 0) {
+                if (player.player?.isPlaying != true) player.toggle()
+                return@launch
+            }
             play(start.id)
         }
     }
@@ -367,37 +370,38 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * Apply any debounced lens move before queue work so Renew/Play Context match the map.
-     * Cancels an in-flight flush and pushes the latest coords so a mid-call null does not
-     * drop a newer aim.
+     * Holds [lensMutex] so a concurrent setLens flusher cannot steal the newest aim.
      */
     private suspend fun flushPendingLens() {
-        lensFlush?.cancel()
-        lensFlush = null
-        // Loop until stable: a setLens during the IO call may refill pendingLens.
-        while (true) {
-            val next = pendingLens ?: return
-            pendingLens = null
-            val snap = withContext(Dispatchers.IO) {
-                engine.call(
-                    "set_lens",
-                    JSONObject()
-                        .put("x", next.first.toDouble())
-                        .put("y", next.second.toDouble())
-                        .put("radius", next.third.toDouble()),
-                )
+        lensMutex.withLock {
+            while (true) {
+                val next = pendingLens ?: return
+                pendingLens = null
+                val snap = withContext(Dispatchers.IO) {
+                    engine.call(
+                        "set_lens",
+                        JSONObject()
+                            .put("x", next.first.toDouble())
+                            .put("y", next.second.toDouble())
+                            .put("radius", next.third.toDouble()),
+                    )
+                }
+                applySnap(snap)
             }
-            applySnap(snap)
-            if (pendingLens == null) return
         }
     }
 
     fun togglePlay() {
         val current = _state.value.snapshot.current
-        if (current == null) {
-            val first = _state.value.snapshot.queue.firstOrNull() ?: return
-            play(first.id)
-        } else {
-            player.toggle()
+        val loadedId = player.player?.currentMediaItem?.mediaId?.toIntOrNull()
+        val hasMedia = (player.player?.mediaItemCount ?: 0) > 0 && loadedId != null
+        when {
+            current == null -> {
+                val first = _state.value.snapshot.queue.firstOrNull() ?: return
+                play(first.id)
+            }
+            !hasMedia || loadedId != current.id -> play(current.id)
+            else -> player.toggle()
         }
     }
 
@@ -473,6 +477,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         startWork("Looking for music…") {
             val app = getApplication<Application>()
             val uriTracks = mutableListOf<org.json.JSONObject>()
+            var truncated = false
             val folders = withContext(Dispatchers.IO) {
                 val found = mutableListOf<String>()
                 extraPaths.forEach { raw ->
@@ -483,7 +488,9 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                 if (includeMediaStore) {
                     // Prefer MediaStore rows directly — scoped storage often
                     // cannot os.walk Music even after READ_MEDIA_AUDIO.
-                    MediaStoreMusic.tracks(app).forEach { track ->
+                    val listing = MediaStoreMusic.listing(app)
+                    truncated = truncated || listing.truncated
+                    listing.tracks.forEach { track ->
                         if (track.playPath.startsWith("content:")) {
                             uriTracks += JSONObject()
                                 .put("path", track.playPath)
@@ -501,9 +508,15 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 if (!treeUri.isNullOrBlank()) {
                     val ingested = SafIngest.ingest(app, android.net.Uri.parse(treeUri))
+                    truncated = truncated || ingested.truncated
                     found += ingested.folders
                     ingested.uriTracks.forEach { track ->
-                        uriTracks += JSONObject().put("path", track.uri).put("title", track.title)
+                        uriTracks += JSONObject()
+                            .put("path", track.uri)
+                            .put("title", track.title)
+                            .put("duration_ms", track.durationMs)
+                            .put("artist", track.artist)
+                            .put("album", track.album)
                     }
                     // Persist grant ↔ folder key so Remove can drop access.
                     val keys = if (ingested.folders.isNotEmpty()) {
@@ -555,6 +568,13 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(message = "Listening…") }
             val listened = runEngineJob("analyze", JSONObject())
             applySnap(listened)
+            if (truncated) {
+                _state.update {
+                    it.copy(
+                        message = "Indexed the first ${SafIngest.MAX_FILES} files. Add another folder for the rest.",
+                    )
+                }
+            }
         }
     }
 

@@ -16,6 +16,11 @@ data class MediaStoreTrack(
     val album: String = "",
 )
 
+data class MediaStoreListing(
+    val tracks: List<MediaStoreTrack>,
+    val truncated: Boolean = false,
+)
+
 /** MediaStore audio → folders for os.walk and/or content URI tracks. */
 object MediaStoreMusic {
     fun directories(context: Context): List<String> {
@@ -28,6 +33,10 @@ object MediaStoreMusic {
      * so scoped-storage phones still get a library after Allow.
      */
     fun tracks(context: Context, max: Int = SafIngest.MAX_FILES): List<MediaStoreTrack> {
+        return listing(context, max).tracks
+    }
+
+    fun listing(context: Context, max: Int = SafIngest.MAX_FILES): MediaStoreListing {
         val uri = collection()
         val projection = mutableListOf(
             MediaStore.Audio.Media._ID,
@@ -44,6 +53,7 @@ object MediaStoreMusic {
             }
         }
         val out = ArrayList<MediaStoreTrack>()
+        var truncated = false
         try {
             context.contentResolver.query(
                 uri,
@@ -61,7 +71,11 @@ object MediaStoreMusic {
                 val albumCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM)
                 val volCol = cursor.getColumnIndex(MediaStore.Audio.Media.VOLUME_NAME)
                 val durCol = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION)
-                while (cursor.moveToNext() && out.size < max) {
+                while (cursor.moveToNext()) {
+                    if (out.size >= max) {
+                        truncated = true
+                        break
+                    }
                     val id = cursor.getLong(idCol)
                     val data = if (dataCol >= 0) cursor.getString(dataCol) else null
                     val rel = if (relCol >= 0) cursor.getString(relCol) else null
@@ -90,9 +104,9 @@ object MediaStoreMusic {
                 }
             }
         } catch (_: SecurityException) {
-            return emptyList()
+            return MediaStoreListing(emptyList())
         }
-        return out
+        return MediaStoreListing(out, truncated)
     }
 
     fun filePaths(context: Context): List<String> {

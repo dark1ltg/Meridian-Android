@@ -7,12 +7,15 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-03
 
-Published on this repo’s Releases page (**versionCode 153** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 154** / versionName 1.3.6). Feature overview: [README](README.md).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `bdd281d8bb0d095ed1f237c01df4b74e0b72fb9efdcfd9ccf76fdf1d8bf8865a`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `1981066c00d96e69d21739a99edeeb31758aee9ba3e71cb79b0d3b16a9b09648`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); SHA-256 in the release `.sha256` asset
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit; SHA-256 in the release `.sha256` asset
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 154
+- **Bugfix (10→1)**: cold-start Play loads current; pause near end re-arms advance; skip `from_id` vs finished_current; abort serial; epoch-guard skip/previous/error; Play Context does not restart; consecutive unreadable skip; lens mutex for Renew; SAF tags; 50k import cap + truncation warning
 
 ### versionCode 153
 - **Bugfix (10→1)**: Listen unlocks transport mid-Analyze; SAF cold-start boot; late-grant import waits for snapshot; love/pin/skip invalidate playable cache; pause/unplug cancels near-end autoplay; finished_current `ended_id` prevents double-advance; abort awaits before new Scan; MediaStore artist/album on URI tracks; Queue refresh on natural rebuild; notification prompt after onboarding
