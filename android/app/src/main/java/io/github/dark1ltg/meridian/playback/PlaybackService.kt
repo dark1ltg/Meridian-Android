@@ -84,6 +84,27 @@ class PlaybackService : MediaSessionService() {
         val launch = DeviceUnlock.sessionActivityPendingIntent(this)
         session = MediaSession.Builder(this, QueuePlayer(dual.active))
             .setSessionActivity(launch)
+            .setCallback(
+                object : MediaSession.Callback {
+                    override fun onConnect(
+                        session: MediaSession,
+                        controller: MediaSession.ControllerInfo,
+                    ): MediaSession.ConnectionResult {
+                        // Single-item DualDeck timelines drop SEEK_TO_NEXT/PREV from ExoPlayer's
+                        // native commands; keep them so notification / MediaController skip works.
+                        val playerCmds = Player.Commands.Builder()
+                            .addAll(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
+                            .add(Player.COMMAND_SEEK_TO_NEXT)
+                            .add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                            .add(Player.COMMAND_SEEK_TO_PREVIOUS)
+                            .add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                            .build()
+                        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                            .setAvailablePlayerCommands(playerCmds)
+                            .build()
+                    }
+                },
+            )
             .build()
         setMediaNotificationProvider(
             DefaultMediaNotificationProvider(this).also {

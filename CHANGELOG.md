@@ -7,12 +7,15 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-03
 
-Published on this repo’s Releases page (**versionCode 151** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 152** / versionName 1.3.6). Feature overview: [README](README.md).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `12aead0c640edb6ef03a8985647695df5ee977897f0e7e58531ed323fb7eb19a`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `33758a93af4ba084357234b61fbe480a7d26a3f4648bd50f22f9f2804acbdba0`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); SHA-256 in the release `.sha256` asset
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit; SHA-256 in the release `.sha256` asset
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 152
+- **Now Playing Previous / Next**: UI skip/previous call the Python queue then `player.play` (MediaController `seekToNext` no-oped on the single-item DualDeck timeline); session connect keeps next/prev commands for notifications
 
 ### versionCode 151
 - GitHub Releases **publish date** refreshes when the APK is rebuilt (workflow recreates the release object instead of only overwriting assets)
