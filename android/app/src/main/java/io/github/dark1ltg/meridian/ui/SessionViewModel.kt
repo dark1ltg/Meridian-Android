@@ -252,11 +252,58 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun skip() {
-        player.skip()
+        // Drive engine + setMediaItem here. MediaController.seekToNext() is often a
+        // no-op with our single-item DualDeck timeline even when QueuePlayer overrides it.
+        viewModelScope.launch {
+            ensureBoot()
+            val positionMs = _clock.value.positionMs
+            val snap = withContext(Dispatchers.IO) {
+                engine.call("skip", JSONObject().put("position_ms", positionMs))
+            }
+            applySnap(snap)
+            playSnapCurrent(snap)
+        }
     }
 
     fun previous() {
-        player.previous()
+        viewModelScope.launch {
+            ensureBoot()
+            val positionMs = _clock.value.positionMs
+            // Same >4s rule as lockscreen / PlaybackService — restart before true previous.
+            if (positionMs > 4_000L) {
+                player.seek(0L)
+                _clock.value = _clock.value.copy(positionMs = 0L)
+                return@launch
+            }
+            val snap = withContext(Dispatchers.IO) {
+                engine.call("previous")
+            }
+            applySnap(snap)
+            playSnapCurrent(snap)
+        }
+    }
+
+    private suspend fun playSnapCurrent(snap: EngineSnapshot) {
+        val track = snap.current ?: return
+        val reachable = withContext(Dispatchers.IO) {
+            PathProbe(getApplication()).reachable(track.path)
+        }
+        if (!reachable) {
+            _state.update { it.copy(message = "Can’t open that file — trying the next track…") }
+            val next = withContext(Dispatchers.IO) {
+                engine.call("playback_failed", JSONObject().put("id", track.id))
+            }
+            applySnap(next)
+            next.current?.let { cand ->
+                val ok = withContext(Dispatchers.IO) {
+                    PathProbe(getApplication()).reachable(cand.path)
+                }
+                if (ok) player.play(cand)
+            }
+            return
+        }
+        player.play(track)
+        _clock.value = PlaybackClock(positionMs = 0L, durationMs = track.durationMs)
     }
 
     fun seek(ms: Long) {
