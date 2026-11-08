@@ -66,6 +66,8 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingLens: Triple<Float, Float, Float>? = null
     private val bootMutex = Mutex()
     private var booted = false
+    /** True after the first successful engine ensure — used to avoid empty-library races. */
+    val hasBooted: Boolean get() = booted
     var onPickFolder: (() -> Unit)? = null
 
     init {
@@ -124,7 +126,7 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Stop any in-flight Scan/Listen so the next action can take the engine lock. */
+    /** Stop any in-flight Scan/Listen (cancel UI job + abort flag). */
     private fun stopWork(message: String? = null) {
         work?.cancel()
         work = null
@@ -135,6 +137,25 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                 job = JobProgress(),
                 message = message ?: it.message,
             )
+        }
+    }
+
+    /**
+     * Replace in-flight work: cancel, await abort, then run [block].
+     * Awaiting abort avoids a late request_abort cancelling the newly started job.
+     */
+    private fun startWork(message: String, block: suspend () -> Unit) {
+        work?.cancel()
+        work = null
+        work = viewModelScope.launch {
+            withContext(Dispatchers.IO) { runCatching { engine.abort() } }
+            ensureBoot()
+            _state.update { it.copy(busy = true, message = message, job = JobProgress()) }
+            try {
+                block()
+            } finally {
+                _state.update { it.copy(busy = false, job = JobProgress()) }
+            }
         }
     }
 
@@ -238,7 +259,9 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         val snap = _state.value.snapshot
         if (snap.current?.id == id) return
         val row = findTrack(id)
-        if (row != null) {
+        val inQueue = snap.queue.any { it.id == id }
+        // Natural end can rebuild the plan — local highlight alone leaves Queue stale.
+        if (row != null && inQueue) {
             _state.update { it.copy(snapshot = it.snapshot.withPlayingTrack(row)) }
             val p = player.player
             _clock.value = PlaybackClock(
@@ -246,7 +269,6 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
                 durationMs = p?.duration?.takeIf { it > 0 } ?: row.durationMs,
             )
         } else {
-            // Rare: track not in the last UI shell — pull engine state once.
             call("snapshot")
         }
     }
@@ -413,20 +435,13 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     fun rescan() = heavy("rescan") { JSONObject() }
 
     private fun scanThenListen() {
-        stopWork("Scanning…")
-        work = viewModelScope.launch {
-            ensureBoot()
-            _state.update { it.copy(busy = true, message = "Scanning…") }
-            try {
-                val scanned = runEngineJob("scan", JSONObject())
-                applySnap(scanned)
-                if (!scanned.ok) return@launch
-                _state.update { it.copy(busy = true, message = "Listening…") }
-                val listened = runEngineJob("analyze", JSONObject())
-                applySnap(listened)
-            } finally {
-                _state.update { it.copy(busy = false, job = JobProgress()) }
-            }
+        startWork("Scanning…") {
+            val scanned = runEngineJob("scan", JSONObject())
+            applySnap(scanned)
+            if (!scanned.ok) return@startWork
+            _state.update { it.copy(busy = true, message = "Listening…") }
+            val listened = runEngineJob("analyze", JSONObject())
+            applySnap(listened)
         }
     }
 
@@ -455,114 +470,102 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
         treeUri: String?,
         includeMediaStore: Boolean = false,
     ) {
-        stopWork("Looking for music…")
-        work = viewModelScope.launch {
-            ensureBoot()
-            _state.update { it.copy(busy = true, message = "Looking for music…") }
-            try {
-                val app = getApplication<Application>()
-                val uriTracks = mutableListOf<org.json.JSONObject>()
-                val folders = withContext(Dispatchers.IO) {
-                    val found = mutableListOf<String>()
-                    extraPaths.forEach { raw ->
-                        val resolved = FolderPaths.fromTreeUri(raw) ?: raw
-                        val dir = File(resolved)
-                        if (dir.isDirectory) found += dir.absolutePath
-                    }
-                    if (includeMediaStore) {
-                        // Prefer MediaStore rows directly — scoped storage often
-                        // cannot os.walk Music even after READ_MEDIA_AUDIO.
-                        MediaStoreMusic.tracks(app).forEach { track ->
-                            if (track.playPath.startsWith("content:")) {
-                                uriTracks += JSONObject()
-                                    .put("path", track.playPath)
-                                    .put("title", track.title)
-                                    .put("duration_ms", track.durationMs)
-                            } else {
-                                File(track.playPath).parentFile?.absolutePath?.let { found += it }
-                            }
-                        }
-                        if (uriTracks.isNotEmpty()) {
-                            found += "content://media/external/audio/media"
-                        }
-                    }
-                    if (!treeUri.isNullOrBlank()) {
-                        val ingested = SafIngest.ingest(app, android.net.Uri.parse(treeUri))
-                        found += ingested.folders
-                        ingested.uriTracks.forEach { track ->
-                            uriTracks += JSONObject().put("path", track.uri).put("title", track.title)
-                        }
-                        // Persist grant ↔ folder key so Remove can drop access.
-                        val keys = if (ingested.folders.isNotEmpty()) {
-                            ingested.folders
+        startWork("Looking for music…") {
+            val app = getApplication<Application>()
+            val uriTracks = mutableListOf<org.json.JSONObject>()
+            val folders = withContext(Dispatchers.IO) {
+                val found = mutableListOf<String>()
+                extraPaths.forEach { raw ->
+                    val resolved = FolderPaths.fromTreeUri(raw) ?: raw
+                    val dir = File(resolved)
+                    if (dir.isDirectory) found += dir.absolutePath
+                }
+                if (includeMediaStore) {
+                    // Prefer MediaStore rows directly — scoped storage often
+                    // cannot os.walk Music even after READ_MEDIA_AUDIO.
+                    MediaStoreMusic.tracks(app).forEach { track ->
+                        if (track.playPath.startsWith("content:")) {
+                            uriTracks += JSONObject()
+                                .put("path", track.playPath)
+                                .put("title", track.title)
+                                .put("duration_ms", track.durationMs)
+                                .put("artist", track.artist)
+                                .put("album", track.album)
                         } else {
-                            listOf(TreeGrants.folderKeyForTree(treeUri))
+                            File(track.playPath).parentFile?.absolutePath?.let { found += it }
                         }
-                        keys.forEach { key -> TreeGrants.remember(app, key, treeUri) }
                     }
-                    MediaStoreMusic.dropNested(found.distinct())
-                }
-                if (folders.isEmpty() && uriTracks.isEmpty()) {
-                    _state.update {
-                        it.copy(
-                            message = "No playable music found. Allow access, Add folder, or Index all audio.",
-                        )
-                    }
-                    return@launch
-                }
-                if (folders.isNotEmpty()) {
-                    val snap = withContext(Dispatchers.IO) {
-                        engine.call("add_folders", JSONObject().put("paths", org.json.JSONArray(folders)))
-                    }
-                    applySnap(snap)
-                    if (!snap.ok) return@launch
-                    // Filesystem folders: scan. content:// folder keys are markers only —
-                    // their audio arrives via add_uri_tracks.
-                    val walkable = folders.filter { !it.startsWith("content:") }
-                    if (walkable.isNotEmpty()) {
-                        _state.update { it.copy(message = "Scanning…") }
-                        val scanned = runEngineJob("scan", JSONObject())
-                        applySnap(scanned)
-                        if (!scanned.ok) return@launch
+                    if (uriTracks.isNotEmpty()) {
+                        found += "content://media/external/audio/media"
                     }
                 }
-                if (uriTracks.isNotEmpty()) {
-                    _state.update { it.copy(message = "Indexing shared storage…") }
-                    val uris = withContext(Dispatchers.IO) {
-                        engine.call(
-                            "add_uri_tracks",
-                            JSONObject().put("tracks", org.json.JSONArray(uriTracks)),
-                        )
+                if (!treeUri.isNullOrBlank()) {
+                    val ingested = SafIngest.ingest(app, android.net.Uri.parse(treeUri))
+                    found += ingested.folders
+                    ingested.uriTracks.forEach { track ->
+                        uriTracks += JSONObject().put("path", track.uri).put("title", track.title)
                     }
-                    applySnap(uris)
-                    if (!uris.ok) return@launch
+                    // Persist grant ↔ folder key so Remove can drop access.
+                    val keys = if (ingested.folders.isNotEmpty()) {
+                        ingested.folders
+                    } else {
+                        listOf(TreeGrants.folderKeyForTree(treeUri))
+                    }
+                    keys.forEach { key -> TreeGrants.remember(app, key, treeUri) }
                 }
-                // Desktop starts waveform Listen immediately after a successful
-                // scan/import — without this, permission grant only tags files.
-                _state.update { it.copy(message = "Listening…") }
-                val listened = runEngineJob("analyze", JSONObject())
-                applySnap(listened)
-            } finally {
-                _state.update { it.copy(busy = false, job = JobProgress()) }
+                MediaStoreMusic.dropNested(found.distinct())
             }
+            if (folders.isEmpty() && uriTracks.isEmpty()) {
+                _state.update {
+                    it.copy(
+                        message = "No playable music found. Allow access, Add folder, or Index all audio.",
+                    )
+                }
+                return@startWork
+            }
+            if (folders.isNotEmpty()) {
+                val snap = withContext(Dispatchers.IO) {
+                    engine.call("add_folders", JSONObject().put("paths", org.json.JSONArray(folders)))
+                }
+                applySnap(snap)
+                if (!snap.ok) return@startWork
+                // Filesystem folders: scan. content:// folder keys are markers only —
+                // their audio arrives via add_uri_tracks.
+                val walkable = folders.filter { !it.startsWith("content:") }
+                if (walkable.isNotEmpty()) {
+                    _state.update { it.copy(message = "Scanning…") }
+                    val scanned = runEngineJob("scan", JSONObject())
+                    applySnap(scanned)
+                    if (!scanned.ok) return@startWork
+                }
+            }
+            if (uriTracks.isNotEmpty()) {
+                _state.update { it.copy(message = "Indexing shared storage…") }
+                val uris = withContext(Dispatchers.IO) {
+                    engine.call(
+                        "add_uri_tracks",
+                        JSONObject().put("tracks", org.json.JSONArray(uriTracks)),
+                    )
+                }
+                applySnap(uris)
+                if (!uris.ok) return@startWork
+            }
+            // Desktop starts waveform Listen immediately after a successful
+            // scan/import — without this, permission grant only tags files.
+            _state.update { it.copy(message = "Listening…") }
+            val listened = runEngineJob("analyze", JSONObject())
+            applySnap(listened)
         }
     }
 
     fun removeFolder(path: String) {
-        stopWork("Removing folder…")
-        work = viewModelScope.launch {
-            ensureBoot()
-            _state.update { it.copy(busy = true, message = "Removing folder…") }
-            try {
-                val app = getApplication<Application>()
-                withContext(Dispatchers.IO) { TreeGrants.release(app, path) }
-                val snap = withContext(Dispatchers.IO) {
-                    engine.call("remove_folder", JSONObject().put("path", path))
-                }
-                applySnap(snap)
-            } finally {
-                _state.update { it.copy(busy = false, job = JobProgress()) }
+        startWork("Removing folder…") {
+            val app = getApplication<Application>()
+            withContext(Dispatchers.IO) { TreeGrants.release(app, path) }
+            val snap = withContext(Dispatchers.IO) {
+                engine.call("remove_folder", JSONObject().put("path", path))
             }
+            applySnap(snap)
         }
     }
 
@@ -603,16 +606,9 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun heavy(method: String, payload: () -> JSONObject) {
-        stopWork("Working…")
-        work = viewModelScope.launch {
-            ensureBoot()
-            _state.update { it.copy(busy = true, message = "Working…") }
-            try {
-                val snap = runEngineJob(method, payload())
-                applySnap(snap)
-            } finally {
-                _state.update { it.copy(busy = false, job = JobProgress()) }
-            }
+        startWork("Working…") {
+            val snap = runEngineJob(method, payload())
+            applySnap(snap)
         }
     }
 

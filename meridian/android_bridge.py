@@ -6,11 +6,14 @@ import json
 import threading
 import traceback
 
-from meridian.android_session import AndroidSession, set_path_probe as _set_path_probe
+from meridian.android_session import STATE_LOCK, AndroidSession, set_path_probe as _set_path_probe
 
 _SESSION = AndroidSession()
-_LOCK = threading.Lock()
+# One Scan/Listen/Rescan at a time. Does NOT block play/skip/lens — those use STATE_LOCK
+# only around short critical sections inside the heavy job.
+_HEAVY_LOCK = threading.Lock()
 _NO_LOCK = {"progress", "request_abort"}
+_HEAVY = {"scan", "analyze", "rescan"}
 
 _METHODS = {
     "initialize": lambda p: _SESSION.initialize(p["data_dir"], p.get("default_music") or ""),
@@ -36,7 +39,7 @@ _METHODS = {
         bool(p.get("natural_advance")),
     ),
     "skip": lambda p: _SESSION.skip(int(p.get("position_ms") or 0)),
-    "finished_current": lambda _p: _SESSION.finished_current(),
+    "finished_current": lambda p: _SESSION.finished_current(int(p.get("ended_id") or 0)),
     "previous": lambda _p: _SESSION.previous(),
     "fade_settled": lambda _p: _SESSION.fade_settled(),
     "playback_failed": lambda p: _SESSION.playback_failed(int(p.get("id") or 0)),
@@ -55,8 +58,13 @@ def call(method: str, payload_json: str = "{}") -> str:
             raise KeyError(f"unknown method {method!r}")
         if method in _NO_LOCK:
             result = fn(payload)
+        elif method in _HEAVY:
+            # Hold only the heavy lock for the long job. STATE_LOCK is taken inside
+            # scan/analyze/rescan around begin/end/rebuild so transport can run mid-Listen.
+            with _HEAVY_LOCK:
+                result = fn(payload)
         else:
-            with _LOCK:
+            with STATE_LOCK:
                 result = fn(payload)
         if not isinstance(result, dict):
             result = {"ok": True, "value": result}

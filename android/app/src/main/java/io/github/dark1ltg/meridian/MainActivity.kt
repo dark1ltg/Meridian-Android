@@ -134,8 +134,9 @@ class MainActivity : ComponentActivity() {
             },
         )
         vm.onPickFolder = { pickTree.launch(null) }
-        if (hasAudioPermission()) vm.boot()
-        maybeRequestNotificationPermission()
+        // Always restore the session — SAF-only libraries have no READ_MEDIA_AUDIO
+        // but still need boot() so the map is not empty after a cold start.
+        vm.boot()
         ContextCompat.registerReceiver(
             this,
             unlockReceiver,
@@ -212,6 +213,13 @@ class MainActivity : ComponentActivity() {
                         )
                         Gate.App -> {
                             val ui by vm.state.collectAsState()
+                            // Notifications after onboarding/permission — not over the splash.
+                            LaunchedEffect(Unit) {
+                                maybeRequestNotificationPermission()
+                                // Wait for ensure() before treating an empty snapshot as "import all".
+                                while (!vm.hasBooted) delay(50)
+                                maybeImportAfterLateGrant()
+                            }
                             MainScreen(
                                 vm = vm,
                                 ui = ui,
@@ -408,6 +416,9 @@ class MainActivity : ComponentActivity() {
         if (lateGrantImportDone) return
         if (gate != Gate.App) return
         if (!hasAudioPermission()) return
+        // Do not decide "empty" until ensure() has applied the restored snapshot —
+        // otherwise a slow cold start silently re-imports the whole device library.
+        if (!vm.hasBooted) return
         val ui = vm.state.value
         if (ui.snapshot.trackCount > 0) {
             lateGrantImportDone = true
@@ -417,7 +428,6 @@ class MainActivity : ComponentActivity() {
         // permanently skipping the one automatic MediaStore import.
         if (ui.busy) return
         lateGrantImportDone = true
-        vm.boot()
         applyFolders(FolderChoice(music = true, downloads = false, other = false, allAudio = true))
     }
 
