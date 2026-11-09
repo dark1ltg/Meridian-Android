@@ -5,7 +5,7 @@ Guides for how Meridian listens to your files and places them on the mood map.
 - **Product overview:** [main README](../README.md)
 - **Release history:** [CHANGELOG.md](../CHANGELOG.md)
 
-**Android APK + source** (this tree): [Meridian-Android releases](https://github.com/dark1ltg/Meridian-Android/releases) — current **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 154**).  
+**Android APK + source** (this tree): [Meridian-Android releases](https://github.com/dark1ltg/Meridian-Android/releases) — current **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 155**).  
 **Linux AppImage** (desktop tree): [Meridian releases](https://github.com/dark1ltg/Meridian/releases).
 
 ## System requirements (Android release APK)
@@ -15,8 +15,8 @@ Guides for how Meridian listens to your files and places them on the mood map.
 | **OS** | Android **8.0+** (API 26) |
 | **CPU** | **arm64-v8a** (Unihertz Titan 2, Pixel, and most current phones) |
 | **Install** | Sideload [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (`adb install -r` or open the file) |
-| **APK checksum** | SHA-256 `954832510cad89ee06a54763ed6c21e833f6f4c8abc61128ceb9913e8e7978aa` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB; SHA-256 `0f4e30044d2a59cc4e63fea5267f3c4bd49916491265a60571daaa69874dc48d`) |
+| **APK checksum** | see [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) (versionCode 155) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (see release `.sha256`) |
 | **Signature** | Public sideload key in `android/keystore/` (not Play Store); cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9` |
 
 ## System requirements (release AppImage)

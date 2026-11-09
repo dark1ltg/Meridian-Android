@@ -5,14 +5,17 @@ All notable Meridian releases are listed here.
 - **Android APK:** [dark1ltg/Meridian-Android/releases](https://github.com/dark1ltg/Meridian-Android/releases)
 - **Linux AppImage:** [dark1ltg/Meridian/releases](https://github.com/dark1ltg/Meridian/releases)
 
-## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-07
+## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-08
 
-Published on this repo’s Releases page (**versionCode 154** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 155** / versionName 1.3.6). Feature overview: [README](README.md).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `954832510cad89ee06a54763ed6c21e833f6f4c8abc61128ceb9913e8e7978aa`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `0f4e30044d2a59cc4e63fea5267f3c4bd49916491265a60571daaa69874dc48d`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm); SHA-256 in the release `.sha256` asset
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit; SHA-256 in the release `.sha256` asset
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 155
+- **About copy** in Settings matches Listen decode order (native PCM → MediaCodec → FFmpeg) and notes live play during Listen plus Now Playing skip
 
 ### versionCode 154
 - **Bugfix (10→1)**: cold-start Play loads current; pause near end re-arms advance; skip `from_id` vs finished_current; abort serial; epoch-guard skip/previous/error; Play Context does not restart; consecutive unreadable skip; lens mutex for Renew; SAF tags; 50k import cap + truncation warning
