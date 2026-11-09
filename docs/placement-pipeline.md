@@ -123,5 +123,6 @@ The matrix and context queue use those positions to pick “what’s near the le
 | `meridian/features.py` | Sticker seed + blend rules |
 | `meridian/acoustic.py` | Short-listen measurements |
 | `meridian/library.py` | Save, tidy, listen nudges |
-| `meridian/ui/mood_map.py` | Draw the stars |
+| `meridian/ui/mood_map.py` | Draw the stars (Linux) |
+| `android/…/ui/MoodMap.kt` | Draw the stars (Android) |
 | `meridian/queue_engine.py` | Queue from lens distance (uses placement; doesn’t create it) |

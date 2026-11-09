@@ -20,7 +20,7 @@ Product overview (features first): **[README](../README.md)** — includes devic
 
 Native stack in the release APK: `libmeridian_aubio.so`, `libffmpegJNI.so`, `libmeridian_pcm.so`. UI type is Ubuntu Sans / Ubuntu Condensed (`resources/fonts/`, Ubuntu Font Licence 1.0).
 
-On-device **Listen** uses the same Python mood math as Linux **1.3.6**: three 12s intro/mid/late windows on long tracks, loudness-normalized cues, placement honesty (dialogue drop, pitch Glow, slope, sub-bass), and shape/timbre/steer leftovers for the queue. PCM comes from **MediaCodec** first, then the **Media3 FFmpeg decoder**. Rhythm uses **aubio**.
+On-device **Listen** uses the same Python mood math as Linux **1.3.6**: three 12s intro/mid/late windows on long tracks, loudness-normalized cues, placement honesty (dialogue drop, pitch Glow, slope, sub-bass), and shape/timbre/steer leftovers for the queue. PCM comes from **`libmeridian_pcm.so`** first, then **MediaCodec**, then the **Media3 FFmpeg decoder**. Rhythm uses **aubio**.
 
 ```bash
 # rebuild FFmpeg JNI after changing enabled decoders (needs NDK r26+)
