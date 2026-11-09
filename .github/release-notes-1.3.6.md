@@ -38,7 +38,7 @@ Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#hig
 - Minimum **Android 8.0 (API 26)**; **versionCode 154** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
-- Listen prefers **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file
+- Listen prefers **native PCM** (`libmeridian_pcm.so`), then **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file
 - GPL-3.0-only; source tarball matches the tagged tree (see also `SOURCE_OFFER.txt`)
 
 Linux AppImage stays on [dark1ltg/Meridian releases](https://github.com/dark1ltg/Meridian/releases).

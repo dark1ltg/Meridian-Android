@@ -51,11 +51,11 @@ Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 - Shared engine no longer needs Qt for paths, scan, or the listening session (`meridian.paths`, `meridian.scan_core`, `meridian.android_session`)
 - Android 8.0+ (API 26) app under `android/`: Compose mood map / matrix / queue, Chaquopy Python engine, Media3 playback
 - Android UI uses bundled Ubuntu Sans / Ubuntu Condensed (same TTFs as the desktop app)
-- Listen on Android: MediaCodec PCM (11025 Hz mono) first, then Media3 FFmpeg JNI fallback (`libffmpegJNI.so`, built in the Release APK workflow); native aubio onsets (`libmeridian_aubio.so`)
+- Listen on Android: `libmeridian_pcm.so` (seek → mono @ 11025) first, then MediaCodec session reuse, then Media3 FFmpeg JNI (`libffmpegJNI.so`); native aubio onsets (`libmeridian_aubio.so`)
 - Android listen matrix, SAF folders, scan/Listen progress + cancel, skip/finish mood nudge, honest “why”, map pan/zoom labels, love / volume
 - Foreground Media3 session: lockscreen controls, notification, and continued play after leaving the app
 - Opening the app from lockscreen media controls requires the device credential (PIN / password / biometric / face); Meridian is not shown over a locked keyguard
-- Mini player, queue, why-this-track, and lockscreen/notification chrome use generated art only (no embedded album covers)
+- Mini player, queue, and why-this-track use generated art; Now Playing may show embedded cover art; lockscreen/notification metadata strips artwork
 - Android playback uses the same always-on ~3s dual-deck crossfade as desktop (skip / pause / seek interrupt the fade; near-end auto-advance)
 - Crossfade listen credit matches desktop: deferred play_count, 8s skip/finish on jumps, finish-nudge the outgoing track when a natural fade lands, Prev restores the outgoing song
 - Index all device audio via MediaStore; SAF trees walk as real `/storage/…` paths when listable, otherwise index as `content:` URI tracks under a shared-folder row

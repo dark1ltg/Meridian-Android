@@ -54,9 +54,9 @@ On Android, the same window plan is decoded on-device: **`libmeridian_pcm.so`** 
 - If only the intro decoded and mid+late failed, analyze still **places** the track as weak/low-trust (`intro only`) so the map shows the full collection — after trying the same longer (~28s) salvage listen used on short/medium dual plans. Late-only / ends-only are also weak-placed (`end only` / `ends only`).  
 - If there is no usable audio **and** no genre/path/keyword evidence, analyze **defers** (`pcm pending`) for a later retry. Tags alone conclude as `seed only` (low-trust).  
 - If a later pass can’t hear audio but Meridian **already kept a good pin** (`pcm pending · kept prior`), that row is **concluded as analyzed** so the whole library isn’t re-queued every launch. **Rescan** still clears analyzed on purpose when you ask for a fresh listen.  
-- If `ffmpeg` is missing, Meridian still plays music, but analyze leaves stars on genre/folder seeds instead of inventing a waveform placement. Startup shows a warning dialog and a sticky status tip (same idea as the missing-libx264 tip).  
-- Stopping analyze kills every in-flight `ffmpeg` process (one or two analyze workers on SSD/NVMe).  
-- Large libraries on flash storage may run **two** analyze workers silently (HDD stays at one).
+- If host `ffmpeg` is missing on **desktop**, Meridian still plays music, but analyze leaves stars on genre/folder seeds instead of inventing a waveform placement. Startup shows a warning dialog and a sticky status tip (same idea as the missing-libx264 tip). The Android release APK ships its own PCM/FFmpeg path, so this missing-CLI case does not apply there.  
+- Stopping analyze aborts in-flight decodes (`request_decode_abort` on Android; desktop also kills host `ffmpeg` processes).  
+- Desktop may run **two** analyze workers on flash storage (HDD stays at one). Android Listen always uses **two** workers.
 
 If **aubio** is installed, it also hears tempo / beat-ish clues. Without aubio, Meridian still works; it just has less rhythm info.
 
@@ -109,7 +109,9 @@ If you **pinned** a star, that pin stays. Analyze will not drag it.
 
 | File | Job |
 |---|---|
-| `meridian/scanner.py` | Import worker + analyze worker |
+| `meridian/scanner.py` | Desktop import / analyze workers |
+| `meridian/scan_core.py` | Shared scan + `analyze_pending` (Android uses this) |
+| `meridian/android_session.py` | Android session, jobs, queue |
 | `meridian/features.py` | Tags, section decode, glue |
 | `meridian/acoustic.py` | Measuring one snippet buffer |
 | `meridian/library.py` | Saving moods and tidy-ups |
