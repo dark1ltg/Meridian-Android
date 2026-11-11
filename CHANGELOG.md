@@ -5,14 +5,17 @@ All notable Meridian releases are listed here.
 - **Android APK:** [dark1ltg/Meridian-Android/releases](https://github.com/dark1ltg/Meridian-Android/releases)
 - **Linux AppImage:** [dark1ltg/Meridian/releases](https://github.com/dark1ltg/Meridian/releases)
 
-## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-08
+## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-11
 
-Published on this repo’s Releases page (**versionCode 155** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 156** / versionName 1.3.6). Feature overview: [README](README.md). SHA-256 of the APK and source tarball are recorded after this GitHub Release (sibling `.sha256` files on the download).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `2c77f702856a726c2b59fd179d465e79538eecb1330b98f6149d0be091befb77`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `0f892679d0b2e7686d0c5a33c89d5d449c42135f3e1b4919a823ec671d450c4f`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 156
+- **Background play**: music keeps going when you leave Meridian; pauses only for calls, alarms, and other media (not app-switch focus blips). Next track is stashed across a call instead of dropping the queue. Notification pings duck volume instead of pausing.
 
 ### versionCode 155
 - **About copy** in Settings matches Listen decode order (native PCM → MediaCodec → FFmpeg) and notes live play during Listen plus Now Playing skip
