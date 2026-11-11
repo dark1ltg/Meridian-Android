@@ -1,27 +1,25 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-11**, **versionCode 157**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-11**, **versionCode 158**).
 
 ## Downloads
 
 | Asset | |
 |---|---|
-| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — ~36.2 MB, arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | `ea7788f74a9a5c8528e4c87862ee9f6325614dd82ab2b1226baf125164bd1449` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — ~5.5 MB, full tree at this release commit |
-| **Source SHA-256** | `54b89360dd8b2dca6e696e99b65cf7d92b1b24ff56ad2085160d89b09dc52f4c` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — arm64-v8a, Android 8.0+ |
+| **APK SHA-256** | sibling [`Meridian-1.3.6-arm64.apk.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) on this release |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — full tree at this release commit |
+| **Source SHA-256** | sibling [`Meridian-1.3.6-src.tar.gz.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) on this release |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
-## What’s new in versionCode 157
+## What’s new in versionCode 158
 
-- Play and skip during a **call or alarm** wait until it ends (no music over the call)
-- Swiping Meridian away during a call still **resumes** after hang-up
-- **Turn-by-turn** voice prompts duck volume instead of pausing the song
-- Ringtones and alarms are ducked in the first moment they appear; stuck notification ducks time out
-- A track that finishes during a call **advances** on resume instead of sitting silent
-- Unplugging headphones during a call keeps the queued next track
+- Pause during a call no longer lets Play put music **on the call**; Play after another music app works again
+- Next uses the song you are still hearing during a crossfade (position and skip credit)
+- Pause then swipe Meridian from Recents keeps the player so you can resume
+- Seek/start position survive a call; long notification ducks stay quiet; app-switch no longer dips volume
 
 ## Product (stable across 1.3.6)
 
@@ -31,7 +29,7 @@ Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#hig
 
 ## Notes
 
-- Minimum **Android 8.0 (API 26)**; **versionCode 157** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 158** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **native PCM** (`libmeridian_pcm.so`), then **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

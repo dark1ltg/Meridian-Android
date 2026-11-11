@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Android 8+](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
-[![Latest](https://img.shields.io/badge/release-v1.3.6%20·%20vc157-informational.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
+[![Latest](https://img.shields.io/badge/release-v1.3.6%20·%20vc158-informational.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
 
 **Your library is a night sky. Navigate by feel.**
 
@@ -39,7 +39,7 @@ Point the lens, then play what lives there. **Renew** rebuilds the queue from th
 The Context tab shows NOW / DEEP / FILL / SHELF bands over the night sky — what’s close to the lens, what deepens the set, what fills gaps, what’s on the shelf.
 
 ### Playback that stays with you
-~3s dual-deck crossfade between tracks. Play keeps going when you switch apps; it pauses for calls, alarms, and other media. Navigation voice prompts duck the volume instead of stopping. Play and skip during a call wait until the call ends. Now Playing Previous / Next, lockscreen, and notification controls all move the queue. Skip, previous, and finish teach the map without leaving the phone. Play after a cold start loads the last current track.
+~3s dual-deck crossfade between tracks. Play keeps going when you switch apps; it pauses for calls, alarms, and other media. Navigation voice prompts duck the volume instead of stopping. Play and skip during a call wait until the call ends; Pause during a call does not let music come back on the line. Play after another music app still works. Next during a crossfade counts the song you are still hearing. Now Playing Previous / Next, lockscreen, and notification controls all move the queue. Skip, previous, and finish teach the map without leaving the phone. Play after a cold start loads the last current track.
 
 ### Your folders, your grants
 Allow Music / MediaStore, or add folders with the system picker (SAF). Folder-only libraries still open after a cold start. Remove a folder and its tracks and grant leave with it. Unreadable files are skipped until a playable one opens. Shared-storage tracks keep artist, album, and duration. Import warns if a tree is larger than 50,000 files.
@@ -54,14 +54,14 @@ Offline only. No telemetry, no account, no cloud sync. GPL-3.0.
 
 ## Get the app
 
-**Current release:** [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) · **versionCode 157** · arm64-v8a · Android 8.0+
+**Current release:** [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) · **versionCode 158** · arm64-v8a · Android 8.0+
 
 | | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
-| **APK SHA-256** | `ea7788f74a9a5c8528e4c87862ee9f6325614dd82ab2b1226baf125164bd1449` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
+| **APK SHA-256** | sibling [`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) on the GitHub Release (recorded after this build) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB) |
-| **Source SHA-256** | `54b89360dd8b2dca6e696e99b65cf7d92b1b24ff56ad2085160d89b09dc52f4c` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **Source SHA-256** | sibling [`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) on the GitHub Release (recorded after this build) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256

@@ -14,7 +14,7 @@ Product overview (features first): **[README](../README.md)** — includes devic
 | **Listen** | After Allow (or Scan / Add folder / Index), Meridian indexes, scans, then waveform-listens automatically — same intro/mid/late honesty as desktop **1.3.6**. Play / skip / the map stay live during Analyze. |
 | **Context queue** | **Renew** rebuilds from the listen matrix (not shuffle); **Play Context** syncs a stale queue to the lens without restarting the loaded track; modes Focus / Wander / Charge / Dim. |
 | **Matrix** | Context tab: NOW / DEEP / FILL / SHELF on the night sky. |
-| **Playback** | ~3s dual-deck crossfade; play continues in other apps (pauses for calls, alarms, other media; navigation prompts duck); play/skip during a call wait until hang-up; Now Playing / lockscreen / notification Previous–Next drive the queue; cold-start Play loads the restored current; device lock required to open the UI from media controls. |
+| **Playback** | ~3s dual-deck crossfade; play continues in other apps (pauses for calls, alarms, other media; navigation prompts duck); play/skip during a call wait until hang-up; Pause during a call does not restart audio on the line; Play after another music app still works; Next during a fade credits the outgoing song; pause+Recents keeps the session; Now Playing / lockscreen / notification Previous–Next drive the queue; cold-start Play loads the restored current; device lock required to open the UI from media controls. |
 | **Library** | MediaStore + SAF folders with persistable grants (folder-only libraries boot without broad audio permission); Remove drops folder, tracks, and grant; URI tracks keep artist/album/duration; unreadable files skip forward; import cap **50,000** with a truncation note; progress shows filename + **N of total**. |
 | **Chrome** | Map / Queue / Context / More; love, volume, honest “why”, debounced search; Back backgrounds without splash replay. |
 
@@ -32,14 +32,14 @@ Release CI builds `libffmpegJNI.so` via `android/scripts/build-media3-ffmpeg.sh`
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 157**, published **2026-11-11**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 158**, published **2026-11-11**).
 
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
-| **APK SHA-256** | `ea7788f74a9a5c8528e4c87862ee9f6325614dd82ab2b1226baf125164bd1449` |
+| **APK SHA-256** | sibling [`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256) on the GitHub Release (recorded after this build) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB) |
-| **Source SHA-256** | `54b89360dd8b2dca6e696e99b65cf7d92b1b24ff56ad2085160d89b09dc52f4c` |
+| **Source SHA-256** | sibling [`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256) on the GitHub Release (recorded after this build) |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 

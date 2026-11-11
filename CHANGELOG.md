@@ -7,12 +7,15 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-11
 
-Published on this repo’s Releases page (**versionCode 157** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 158** / versionName 1.3.6). Feature overview: [README](README.md). SHA-256 of the APK and source tarball are recorded after this GitHub Release (sibling `.sha256` files on the download).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `ea7788f74a9a5c8528e4c87862ee9f6325614dd82ab2b1226baf125164bd1449`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `54b89360dd8b2dca6e696e99b65cf7d92b1b24ff56ad2085160d89b09dc52f4c`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
+- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 158
+- **Playback holds (2)**: pause during a call no longer abandons yield (Play cannot start over the call); explicit Play after another music app works; denied audio focus never starts the decks; Next during a fade credits the outgoing song; same-track skip after near-end does not restart; pause then Recents-swipe keeps the session; seek/start position survive a call; app-switch no longer hedge-ducks; long notification ducks last until the ping ends (stuck OEM ducks time out after ~30s); FGS start denial retries
 
 ### versionCode 157
 - **Playback holds**: in-app play/skip during a call no longer starts audio over the call; swiping Meridian away during a hold still resumes after; headphone unplug during a hold keeps the queued track; a track that ended on hold advances on resume; maps navigation ducks instead of pausing; alarms/ringtones duck during the 400ms focus recheck; stuck notification ducks time out; pause mid-fade does not credit the outgoing track
