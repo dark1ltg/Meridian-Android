@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -42,7 +43,7 @@ class PlaybackService : MediaSessionService() {
     private var advancing = false
     /** Bumped on UI setMediaItem/play so a late finished_current cannot overwrite the tap. */
     private var transportEpoch = 0
-    private var volumeBeforeDuck: Float? = null
+    private var pendingAfterHold: TrackRow? = null
     private val noisy = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
@@ -55,11 +56,10 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         focus = PlaybackAudioFocus(
             this,
-            ownMediaCount = { decks?.playingCount() ?: 0 },
             onHold = { pauseTransport(releaseFocus = false) },
-            onResume = { decks?.resumeActive() },
-            onDuck = { duckVolume() },
-            onUnduck = { unduckVolume() },
+            onResume = { resumeAfterHold() },
+            onDuck = { decks?.duckMultiplier = 0.2f },
+            onUnduck = { decks?.duckMultiplier = 1f },
         )
         val a = newExo()
         val b = newExo()
@@ -120,9 +120,20 @@ class PlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
-        // DualDeck plays the ExoPlayers directly; keep the mediaPlayback FGS up
-        // whenever a deck is audible so hopping to another app does not mute us.
-        super.onUpdateNotification(session, startInForegroundRequired || decks?.isAudible() == true)
+        val keep = startInForegroundRequired || decks?.isAudible() == true || decks?.hasMedia() == true
+        try {
+            super.onUpdateNotification(session, keep)
+        } catch (e: RuntimeException) {
+            // API 31+ ForegroundServiceStartNotAllowedException — keep playing without
+            // re-entering FGS rather than crashing the session.
+            if (Build.VERSION.SDK_INT >= 31 &&
+                e.javaClass.simpleName == "ForegroundServiceStartNotAllowedException"
+            ) {
+                runCatching { super.onUpdateNotification(session, false) }
+            } else {
+                throw e
+            }
+        }
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -179,20 +190,23 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun playTrack(track: TrackRow) {
-        if (focus?.request() == false) return
+        focus?.request()
+        if (focus?.isYielding() == true) {
+            pendingAfterHold = track
+            return
+        }
+        pendingAfterHold = null
         decks?.play(MediaItems.fromTrack(track))
     }
 
-    private fun duckVolume() {
-        val dual = decks ?: return
-        if (volumeBeforeDuck == null) volumeBeforeDuck = dual.masterVolume
-        dual.masterVolume = ((volumeBeforeDuck ?: dual.masterVolume) * 0.2f).coerceAtLeast(0.08f)
-    }
-
-    private fun unduckVolume() {
-        val restore = volumeBeforeDuck ?: return
-        volumeBeforeDuck = null
-        decks?.masterVolume = restore
+    private fun resumeAfterHold() {
+        val pending = pendingAfterHold
+        pendingAfterHold = null
+        if (pending != null) {
+            playTrack(pending)
+        } else {
+            decks?.resumeActive()
+        }
     }
 
     private fun engineQuiet(method: String) {
@@ -207,11 +221,18 @@ class PlaybackService : MediaSessionService() {
         return payload
     }
 
-    /** Pause / unplug: bump epoch so a late finished_current cannot restart audio. */
+    /** Pause / unplug. User pause bumps epoch; focus-hold storms must not. */
     private fun pauseTransport(releaseFocus: Boolean = false) {
-        transportEpoch += 1
+        if (releaseFocus) {
+            pendingAfterHold = null
+            transportEpoch += 1
+            advancing = false
+            focus?.abandon()
+            decks?.pauseBoth()
+            return
+        }
+        if (decks?.isTransportPaused() == true) return
         advancing = false
-        if (releaseFocus) focus?.abandon()
         decks?.pauseBoth()
     }
 
@@ -321,7 +342,8 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun play() {
-            if (focus?.request() == false) return
+            focus?.request()
+            if (focus?.isYielding() == true) return
             decks?.resumeActive()
         }
 

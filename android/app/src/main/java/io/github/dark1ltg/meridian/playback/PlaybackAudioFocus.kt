@@ -5,6 +5,8 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import io.github.dark1ltg.meridian.playback.AudioFocusPolicy.Decision
 
 /**
@@ -12,36 +14,36 @@ import io.github.dark1ltg.meridian.playback.AudioFocusPolicy.Decision
  * off so the incoming deck cannot pause the outgoing deck mid-fade.
  *
  * Yields only when another stream is actually playing (calls, alarms, other
- * media). Switching apps without audio does not pause.
+ * media). Switching apps without audio does not pause. Our own DualDeck
+ * config changes are not treated as a foreign player.
  */
 class PlaybackAudioFocus(
     context: Context,
-    private val ownMediaCount: () -> Int = { 0 },
     private val onHold: () -> Unit,
     private val onResume: () -> Unit,
     private val onDuck: () -> Unit = {},
     private val onUnduck: () -> Unit = {},
 ) {
     private val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val main = Handler(Looper.getMainLooper())
     private var held = false
     private var watchingPlayback = false
     private var resumeOnGain = false
     private var pausedUntilUser = false
     private var ducked = false
 
+    private val recheckTransient = Runnable {
+        apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT, recheck = true)
+    }
+
     private val listener = AudioManager.OnAudioFocusChangeListener { change ->
-        apply(change)
+        main.post { apply(change) }
     }
 
     private val playbackCallback = if (Build.VERSION.SDK_INT >= 26) {
         object : AudioManager.AudioPlaybackCallback() {
             override fun onPlaybackConfigChanged(configs: MutableList<android.media.AudioPlaybackConfiguration>?) {
-                if (!held) return
-                if (otherAudioPlaying()) {
-                    apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
-                } else if (resumeOnGain || ducked) {
-                    apply(AudioManager.AUDIOFOCUS_GAIN)
-                }
+                main.post { onForeignPlaybackChanged() }
             }
         }
     } else {
@@ -64,6 +66,9 @@ class PlaybackAudioFocus(
             null
         }
 
+    /** True while we yielded to a call/alarm/other player and must not start a new track. */
+    fun isYielding(): Boolean = resumeOnGain || pausedUntilUser
+
     fun request(): Boolean {
         val ok = if (Build.VERSION.SDK_INT >= 26 && request != null) {
             audio.requestAudioFocus(request) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
@@ -82,6 +87,7 @@ class PlaybackAudioFocus(
     }
 
     fun abandon() {
+        main.removeCallbacks(recheckTransient)
         if (!held && !ducked) return
         held = false
         resumeOnGain = false
@@ -99,39 +105,63 @@ class PlaybackAudioFocus(
         }
     }
 
-    internal fun apply(change: Int) {
+    internal fun apply(change: Int, recheck: Boolean = false) {
         when (
             AudioFocusPolicy.decide(
                 change,
                 audio.mode,
                 playbackUsages(),
-                ownMediaCount(),
+                recheck = recheck,
             )
         ) {
             Decision.PauseUntilUser -> {
+                main.removeCallbacks(recheckTransient)
                 resumeOnGain = false
                 pausedUntilUser = true
                 unduckIfNeeded()
                 onHold()
             }
             Decision.PauseAndResume -> {
+                main.removeCallbacks(recheckTransient)
                 if (!pausedUntilUser) resumeOnGain = true
                 unduckIfNeeded()
                 onHold()
             }
             Decision.Duck -> {
+                main.removeCallbacks(recheckTransient)
                 if (!ducked) {
                     ducked = true
                     onDuck()
                 }
             }
             Decision.Recover -> {
+                main.removeCallbacks(recheckTransient)
                 val shouldResume = resumeOnGain && !pausedUntilUser
                 resumeOnGain = false
                 unduckIfNeeded()
                 if (shouldResume) onResume()
             }
-            Decision.Ignore -> Unit
+            Decision.Recheck -> {
+                main.removeCallbacks(recheckTransient)
+                main.postDelayed(recheckTransient, AudioFocusPolicy.TRANSIENT_RECHECK_MS)
+            }
+            Decision.Ignore -> {
+                if (recheck) main.removeCallbacks(recheckTransient)
+            }
+        }
+    }
+
+    private fun onForeignPlaybackChanged() {
+        if (!held) return
+        val usages = playbackUsages()
+        val mode = audio.mode
+        when {
+            AudioFocusPolicy.shouldPause(mode, usages) ->
+                apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+            AudioFocusPolicy.shouldDuck(usages) ->
+                apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK)
+            resumeOnGain || ducked ->
+                apply(AudioManager.AUDIOFOCUS_GAIN)
         }
     }
 
@@ -139,10 +169,6 @@ class PlaybackAudioFocus(
         if (!ducked) return
         ducked = false
         onUnduck()
-    }
-
-    private fun otherAudioPlaying(): Boolean {
-        return AudioFocusPolicy.otherAudioPlaying(audio.mode, playbackUsages(), ownMediaCount())
     }
 
     private fun playbackUsages(): List<Int> {
@@ -155,7 +181,7 @@ class PlaybackAudioFocus(
         if (Build.VERSION.SDK_INT >= 26) {
             val cb = playbackCallback ?: return
             runCatching {
-                audio.registerAudioPlaybackCallback(cb, null)
+                audio.registerAudioPlaybackCallback(cb, main)
                 watchingPlayback = true
             }
         }
