@@ -254,44 +254,13 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun skip() {
-        // Drive engine + setMediaItem here. MediaController.seekToNext() is often a
-        // no-op with our single-item DualDeck timeline even when QueuePlayer overrides it.
-        viewModelScope.launch {
-            ensureBoot()
-            val positionMs = _clock.value.positionMs
-            val fromId = _state.value.snapshot.current?.id ?: 0
-            val snap = withContext(Dispatchers.IO) {
-                engine.call(
-                    "skip",
-                    JSONObject().put("position_ms", positionMs).put("from_id", fromId),
-                )
-            }
-            applySnap(snap)
-            playSnapCurrent(snap)
-        }
+        // QueuePlayer.seekToNext owns skipPayload (outgoing id/position during a fade)
+        // so Now Playing and the notification share one engine call.
+        player.skip()
     }
 
     fun previous() {
-        viewModelScope.launch {
-            ensureBoot()
-            val positionMs = _clock.value.positionMs
-            // Same >4s rule as lockscreen / PlaybackService — restart before true previous.
-            if (positionMs > 4_000L) {
-                player.seek(0L)
-                _clock.value = _clock.value.copy(positionMs = 0L)
-                return@launch
-            }
-            val snap = withContext(Dispatchers.IO) {
-                engine.call("previous")
-            }
-            applySnap(snap)
-            playSnapCurrent(snap)
-        }
-    }
-
-    private suspend fun playSnapCurrent(snap: EngineSnapshot) {
-        val track = snap.current ?: return
-        playReachable(track)
+        player.previous()
     }
 
     /** Skip dead files until one opens, or the queue is exhausted. */

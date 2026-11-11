@@ -33,8 +33,9 @@ class PlaybackAudioFocus(
     private var ducked = false
     /** True while waiting to see if a bare LOSS_TRANSIENT is a call/alarm or an app-switch blip. */
     private var recheckPending = false
-    /** Ignore lingering duck usages after [AudioFocusPolicy.DUCK_MAX_MS] until they disappear. */
+    /** Ignore lingering duck usages after [AudioFocusPolicy.DUCK_STICKY_TICKS] until they disappear. */
     private var ignoreStickyDuck = false
+    private var duckStickyTicks = 0
 
     private val recheckTransient = Runnable {
         apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT, recheck = true)
@@ -42,8 +43,17 @@ class PlaybackAudioFocus(
 
     private val unduckStuck = Runnable {
         if (!ducked) return@Runnable
-        if (AudioFocusPolicy.shouldPause(audio.mode, playbackUsages())) return@Runnable
-        ignoreStickyDuck = true
+        val usages = playbackUsages()
+        if (AudioFocusPolicy.shouldPause(audio.mode, usages)) return@Runnable
+        if (AudioFocusPolicy.shouldDuck(usages)) {
+            duckStickyTicks += 1
+            if (duckStickyTicks < AudioFocusPolicy.DUCK_STICKY_TICKS) {
+                armDuckTimeout()
+                return@Runnable
+            }
+            ignoreStickyDuck = true
+        }
+        duckStickyTicks = 0
         unduckIfNeeded()
     }
 
@@ -77,8 +87,22 @@ class PlaybackAudioFocus(
             null
         }
 
-    /** True while we yielded to a call/alarm/other player and must not start a new track. */
+    /** True while a call/alarm has us paused and we must not start a new track. */
+    fun isHoldingForCall(): Boolean = resumeOnGain
+
+    /** True while we yielded to a call/alarm/other player and must not auto-resume. */
     fun isYielding(): Boolean = resumeOnGain || pausedUntilUser
+
+    /** User pause during a call: stay paused after hang-up, never play over the call. */
+    fun markPausedUntilUser() {
+        pausedUntilUser = true
+        resumeOnGain = false
+    }
+
+    /** Another stream (call, alarm, voice) is actually playing right now. */
+    fun foreignAudioShouldBlock(): Boolean {
+        return AudioFocusPolicy.shouldPause(audio.mode, playbackUsages())
+    }
 
     fun request(): Boolean {
         val ok = if (Build.VERSION.SDK_INT >= 26 && request != null) {
@@ -107,6 +131,7 @@ class PlaybackAudioFocus(
         main.removeCallbacks(unduckStuck)
         recheckPending = false
         ignoreStickyDuck = false
+        duckStickyTicks = 0
         if (!held && !ducked) return
         held = false
         resumeOnGain = false
@@ -149,6 +174,7 @@ class PlaybackAudioFocus(
             Decision.Duck -> {
                 clearRecheck()
                 ignoreStickyDuck = false
+                duckStickyTicks = 0
                 duckIfNeeded()
                 armDuckTimeout()
             }
@@ -160,10 +186,10 @@ class PlaybackAudioFocus(
                 if (shouldResume) onResume()
             }
             Decision.Recheck -> {
-                // Hedge-duck until we know if this is a call/alarm or an app-switch blip,
-                // so the first ~400ms of a ringtone is quiet instead of full volume.
+                // Do not duck here: DualDeck's own MEDIA configs would stay quiet for 400ms
+                // on every app-switch. Playback callback still pauses/ducks as soon as a
+                // ringtone, alarm, or notification usage actually appears.
                 recheckPending = true
-                duckIfNeeded()
                 main.removeCallbacks(recheckTransient)
                 main.postDelayed(recheckTransient, AudioFocusPolicy.TRANSIENT_RECHECK_MS)
             }

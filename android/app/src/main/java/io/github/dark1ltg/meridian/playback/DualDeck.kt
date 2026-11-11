@@ -83,12 +83,28 @@ class DualDeck(
     }
 
     fun play(item: MediaItem) {
+        val currentId = active.currentMediaItem?.mediaId
+        if (currentId != null && currentId == item.mediaId) {
+            // Already this track (skip no-op after near-end advance, or same-id replay).
+            if (crossfading) finishFade(immediate = true, notify = false)
+            when (active.playbackState) {
+                Player.STATE_ENDED -> {
+                    active.seekTo(0)
+                    active.play()
+                }
+                Player.STATE_IDLE -> {
+                    active.prepare()
+                    active.play()
+                }
+                else -> if (!active.playWhenReady) active.play()
+            }
+            return
+        }
         // Cutting a live crossfade: finish without notify, then settle once below
         // after hardCut so deferred play credit commits exactly once.
         val wasFading = crossfading
         if (wasFading) finishFade(immediate = true, notify = false)
-        val currentId = active.currentMediaItem?.mediaId
-        val canFade = Crossfade.shouldFade(active.isPlaying, currentId, item.mediaId)
+        val canFade = Crossfade.shouldFade(active.isPlaying, active.currentMediaItem?.mediaId, item.mediaId)
         advanceEmitted = false
         incomingEnded = false
         if (canFade) {
@@ -132,6 +148,15 @@ class DualDeck(
     }
 
     fun hasMedia(): Boolean = active.mediaItemCount > 0 && active.currentMediaItem != null
+
+    /** Track the user is still hearing — outgoing during a fade, else active. */
+    fun skipFromId(): String? {
+        return (outgoing ?: active).currentMediaItem?.mediaId
+    }
+
+    fun skipPositionMs(): Long {
+        return (outgoing ?: active).currentPosition.coerceAtLeast(0L)
+    }
 
     fun stopAll(notifySettle: Boolean = true) {
         if (crossfading) finishFade(immediate = true, notify = notifySettle)

@@ -14,6 +14,9 @@ internal object AudioFocusPolicy {
     /** Cap a duck so a stuck OEM notification config cannot leave volume at 0.2 forever. */
     const val DUCK_MAX_MS = 5_000L
 
+    /** Consecutive duck timeouts before a stuck OEM usage is ignored (~30s). */
+    const val DUCK_STICKY_TICKS = 6
+
     enum class Decision {
         PauseUntilUser,
         PauseAndResume,
