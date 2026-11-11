@@ -24,6 +24,13 @@ class DualDeck(
             applyVolumes(if (crossfading) lastT else 1f)
         }
 
+    /** 1 = full; 0.2 = ducked under a notification. Independent of [masterVolume]. */
+    var duckMultiplier: Float = 1f
+        set(value) {
+            field = value.coerceIn(0.08f, 1f)
+            applyVolumes(if (crossfading) lastT else 1f)
+        }
+
     var active: ExoPlayer = a
         private set
     private val idle: ExoPlayer
@@ -57,13 +64,22 @@ class DualDeck(
     init {
         wire(a)
         wire(b)
-        a.volume = masterVolume
+        a.volume = outputGain()
         b.volume = 0f
     }
 
     fun isAudible(): Boolean {
-        return (a.playWhenReady && a.mediaItemCount > 0 && a.playbackState != Player.STATE_IDLE) ||
-            (b.playWhenReady && b.mediaItemCount > 0 && b.playbackState != Player.STATE_IDLE)
+        return deckHasAudio(a, includeEnded = true) || deckHasAudio(b, includeEnded = true)
+    }
+
+    fun isTransportPaused(): Boolean = !a.playWhenReady && !b.playWhenReady
+
+    private fun deckHasAudio(player: ExoPlayer, includeEnded: Boolean): Boolean {
+        if (!player.playWhenReady || player.mediaItemCount <= 0) return false
+        val state = player.playbackState
+        if (state == Player.STATE_IDLE) return false
+        if (!includeEnded && state == Player.STATE_ENDED) return false
+        return true
     }
 
     fun play(item: MediaItem) {
@@ -109,7 +125,7 @@ class DualDeck(
         b.stop()
         a.volume = 0f
         b.volume = 0f
-        active.volume = masterVolume
+        active.volume = outputGain()
     }
 
     fun seek(positionMs: Long) {
@@ -131,7 +147,7 @@ class DualDeck(
     private fun hardCut(item: MediaItem) {
         idle.stop()
         idle.volume = 0f
-        active.volume = masterVolume
+        active.volume = outputGain()
         active.setMediaItem(item)
         active.prepare()
         active.play()
@@ -172,7 +188,7 @@ class DualDeck(
             out.stop()
             out.volume = 0f
         }
-        active.volume = masterVolume
+        active.volume = outputGain()
         if (!was) return
         if (notify) onFadeSettled()
         if (
@@ -192,14 +208,17 @@ class DualDeck(
     private fun applyVolumes(t: Float) {
         lastT = t
         val out = outgoing
+        val gain = outputGain()
         if (crossfading && out != null) {
-            out.volume = masterVolume * (1f - t)
-            active.volume = masterVolume * t
+            out.volume = gain * (1f - t)
+            active.volume = gain * t
         } else {
-            active.volume = masterVolume
+            active.volume = gain
             idle.volume = 0f
         }
     }
+
+    private fun outputGain(): Float = masterVolume * duckMultiplier
 
     private fun wire(deck: ExoPlayer) {
         deck.addListener(
