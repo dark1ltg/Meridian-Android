@@ -19,7 +19,9 @@ Guides for how Meridian listens to your files and places them on the mood map.
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB; SHA-256 `0f892679d0b2e7686d0c5a33c89d5d449c42135f3e1b4919a823ec671d450c4f`) |
 | **Signature** | Public sideload key in `android/keystore/` (not Play Store); cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9` |
 
-## System requirements (release AppImage)
+## System requirements (Linux AppImage, sibling desktop tree)
+
+These apply to [dark1ltg/Meridian](https://github.com/dark1ltg/Meridian) AppImages, not to the Android APK. This tree’s current product version is **1.3.6** (`versionName`; Android **versionCode 155**).
 
 | | |
 |---|---|
