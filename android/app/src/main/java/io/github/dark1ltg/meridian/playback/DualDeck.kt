@@ -62,8 +62,22 @@ class DualDeck(
     }
 
     fun isAudible(): Boolean {
-        return (a.playWhenReady && a.mediaItemCount > 0 && a.playbackState != Player.STATE_IDLE) ||
-            (b.playWhenReady && b.mediaItemCount > 0 && b.playbackState != Player.STATE_IDLE)
+        return deckHasAudio(a, includeEnded = true) || deckHasAudio(b, includeEnded = true)
+    }
+
+    fun playingCount(): Int {
+        var n = 0
+        if (deckHasAudio(a, includeEnded = false)) n++
+        if (deckHasAudio(b, includeEnded = false)) n++
+        return n
+    }
+
+    private fun deckHasAudio(player: ExoPlayer, includeEnded: Boolean): Boolean {
+        if (!player.playWhenReady || player.mediaItemCount <= 0) return false
+        val state = player.playbackState
+        if (state == Player.STATE_IDLE) return false
+        if (!includeEnded && state == Player.STATE_ENDED) return false
+        return true
     }
 
     fun play(item: MediaItem) {

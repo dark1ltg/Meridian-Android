@@ -42,10 +42,11 @@ class PlaybackService : MediaSessionService() {
     private var advancing = false
     /** Bumped on UI setMediaItem/play so a late finished_current cannot overwrite the tap. */
     private var transportEpoch = 0
+    private var volumeBeforeDuck: Float? = null
     private val noisy = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
-                pauseTransport()
+                pauseTransport(releaseFocus = true)
             }
         }
     }
@@ -54,8 +55,11 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         focus = PlaybackAudioFocus(
             this,
-            onHold = { pauseTransport() },
+            ownMediaCount = { decks?.playingCount() ?: 0 },
+            onHold = { pauseTransport(releaseFocus = false) },
             onResume = { decks?.resumeActive() },
+            onDuck = { duckVolume() },
+            onUnduck = { unduckVolume() },
         )
         val a = newExo()
         val b = newExo()
@@ -115,10 +119,15 @@ class PlaybackService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        // DualDeck plays the ExoPlayers directly; keep the mediaPlayback FGS up
+        // whenever a deck is audible so hopping to another app does not mute us.
+        super.onUpdateNotification(session, startInForegroundRequired || decks?.isAudible() == true)
+    }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (decks?.isAudible() != true) {
-            stopSelf()
-        }
+        if (decks?.isAudible() == true) return
+        stopSelf()
     }
 
     override fun onDestroy() {
@@ -170,8 +179,20 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun playTrack(track: TrackRow) {
-        focus?.request()
+        if (focus?.request() == false) return
         decks?.play(MediaItems.fromTrack(track))
+    }
+
+    private fun duckVolume() {
+        val dual = decks ?: return
+        if (volumeBeforeDuck == null) volumeBeforeDuck = dual.masterVolume
+        dual.masterVolume = ((volumeBeforeDuck ?: dual.masterVolume) * 0.2f).coerceAtLeast(0.08f)
+    }
+
+    private fun unduckVolume() {
+        val restore = volumeBeforeDuck ?: return
+        volumeBeforeDuck = null
+        decks?.masterVolume = restore
     }
 
     private fun engineQuiet(method: String) {
@@ -187,9 +208,10 @@ class PlaybackService : MediaSessionService() {
     }
 
     /** Pause / unplug: bump epoch so a late finished_current cannot restart audio. */
-    private fun pauseTransport() {
+    private fun pauseTransport(releaseFocus: Boolean = false) {
         transportEpoch += 1
         advancing = false
+        if (releaseFocus) focus?.abandon()
         decks?.pauseBoth()
     }
 
@@ -295,13 +317,11 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun pause() {
-            transportEpoch += 1
-            advancing = false
-            decks?.pauseActive()
+            pauseTransport(releaseFocus = true)
         }
 
         override fun play() {
-            focus?.request()
+            if (focus?.request() == false) return
             decks?.resumeActive()
         }
 
@@ -312,6 +332,7 @@ class PlaybackService : MediaSessionService() {
         override fun stop() {
             transportEpoch += 1
             advancing = false
+            focus?.abandon()
             decks?.stopAll()
         }
 
