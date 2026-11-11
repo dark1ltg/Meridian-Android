@@ -1,4 +1,4 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-11**, **versionCode 156**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-11**, **versionCode 157**).
 
 ## Downloads
 
@@ -14,12 +14,14 @@ sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
-## What’s new in versionCode 156
+## What’s new in versionCode 157
 
-- **Play in other apps**: music keeps going when Meridian is not on screen
-- Pauses for **calls, alarms, and other media**; notification pings duck volume instead of stopping
-- App-switch focus blips no longer cut the song
-- Next track is kept across a call instead of dropping the queue
+- Play and skip during a **call or alarm** wait until it ends (no music over the call)
+- Swiping Meridian away during a call still **resumes** after hang-up
+- **Turn-by-turn** voice prompts duck volume instead of pausing the song
+- Ringtones and alarms are ducked in the first moment they appear; stuck notification ducks time out
+- A track that finishes during a call **advances** on resume instead of sitting silent
+- Unplugging headphones during a call keeps the queued next track
 
 ## Product (stable across 1.3.6)
 
@@ -29,7 +31,7 @@ Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#hig
 
 ## Notes
 
-- Minimum **Android 8.0 (API 26)**; **versionCode 156** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 157** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **native PCM** (`libmeridian_pcm.so`), then **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

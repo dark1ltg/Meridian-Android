@@ -5,7 +5,7 @@ Guides for how Meridian listens to your files and places them on the mood map.
 - **Product overview:** [main README](../README.md)
 - **Release history:** [CHANGELOG.md](../CHANGELOG.md)
 
-**Android APK + source** (this tree): [Meridian-Android releases](https://github.com/dark1ltg/Meridian-Android/releases) — current **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 156**).  
+**Android APK + source** (this tree): [Meridian-Android releases](https://github.com/dark1ltg/Meridian-Android/releases) — current **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 157**).  
 **Linux AppImage** (desktop tree): [Meridian releases](https://github.com/dark1ltg/Meridian/releases).
 
 ## System requirements (Android release APK)
@@ -21,7 +21,7 @@ Guides for how Meridian listens to your files and places them on the mood map.
 
 ## System requirements (Linux AppImage, sibling desktop tree)
 
-These apply to [dark1ltg/Meridian](https://github.com/dark1ltg/Meridian) AppImages, not to the Android APK. This tree’s current product version is **1.3.6** (`versionName`; Android **versionCode 156**).
+These apply to [dark1ltg/Meridian](https://github.com/dark1ltg/Meridian) AppImages, not to the Android APK. This tree’s current product version is **1.3.6** (`versionName`; Android **versionCode 157**).
 
 | | |
 |---|---|

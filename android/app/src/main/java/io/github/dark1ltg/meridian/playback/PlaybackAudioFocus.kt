@@ -31,9 +31,20 @@ class PlaybackAudioFocus(
     private var resumeOnGain = false
     private var pausedUntilUser = false
     private var ducked = false
+    /** True while waiting to see if a bare LOSS_TRANSIENT is a call/alarm or an app-switch blip. */
+    private var recheckPending = false
+    /** Ignore lingering duck usages after [AudioFocusPolicy.DUCK_MAX_MS] until they disappear. */
+    private var ignoreStickyDuck = false
 
     private val recheckTransient = Runnable {
         apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT, recheck = true)
+    }
+
+    private val unduckStuck = Runnable {
+        if (!ducked) return@Runnable
+        if (AudioFocusPolicy.shouldPause(audio.mode, playbackUsages())) return@Runnable
+        ignoreStickyDuck = true
+        unduckIfNeeded()
     }
 
     private val listener = AudioManager.OnAudioFocusChangeListener { change ->
@@ -80,14 +91,22 @@ class PlaybackAudioFocus(
                 AudioManager.AUDIOFOCUS_GAIN,
             ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
         }
-        if (ok) pausedUntilUser = false
-        held = ok
-        if (ok) registerPlaybackWatch()
+        if (ok) {
+            pausedUntilUser = false
+            resumeOnGain = false
+            held = true
+            registerPlaybackWatch()
+        }
+        // A denied re-request must not clear [held]. Skip during a call would otherwise
+        // stop [onForeignPlaybackChanged] while the decks are still the active player.
         return ok
     }
 
     fun abandon() {
         main.removeCallbacks(recheckTransient)
+        main.removeCallbacks(unduckStuck)
+        recheckPending = false
+        ignoreStickyDuck = false
         if (!held && !ducked) return
         held = false
         resumeOnGain = false
@@ -115,38 +134,44 @@ class PlaybackAudioFocus(
             )
         ) {
             Decision.PauseUntilUser -> {
-                main.removeCallbacks(recheckTransient)
+                clearRecheck()
                 resumeOnGain = false
                 pausedUntilUser = true
                 unduckIfNeeded()
                 onHold()
             }
             Decision.PauseAndResume -> {
-                main.removeCallbacks(recheckTransient)
+                clearRecheck()
                 if (!pausedUntilUser) resumeOnGain = true
                 unduckIfNeeded()
                 onHold()
             }
             Decision.Duck -> {
-                main.removeCallbacks(recheckTransient)
-                if (!ducked) {
-                    ducked = true
-                    onDuck()
-                }
+                clearRecheck()
+                ignoreStickyDuck = false
+                duckIfNeeded()
+                armDuckTimeout()
             }
             Decision.Recover -> {
-                main.removeCallbacks(recheckTransient)
+                clearRecheck()
                 val shouldResume = resumeOnGain && !pausedUntilUser
                 resumeOnGain = false
                 unduckIfNeeded()
                 if (shouldResume) onResume()
             }
             Decision.Recheck -> {
+                // Hedge-duck until we know if this is a call/alarm or an app-switch blip,
+                // so the first ~400ms of a ringtone is quiet instead of full volume.
+                recheckPending = true
+                duckIfNeeded()
                 main.removeCallbacks(recheckTransient)
                 main.postDelayed(recheckTransient, AudioFocusPolicy.TRANSIENT_RECHECK_MS)
             }
             Decision.Ignore -> {
-                if (recheck) main.removeCallbacks(recheckTransient)
+                if (recheck) {
+                    clearRecheck()
+                    unduckIfNeeded()
+                }
             }
         }
     }
@@ -155,20 +180,50 @@ class PlaybackAudioFocus(
         if (!held) return
         val usages = playbackUsages()
         val mode = audio.mode
+        if (ignoreStickyDuck && !AudioFocusPolicy.shouldDuck(usages)) {
+            ignoreStickyDuck = false
+        }
+        if (recheckPending) {
+            // Keep the hedge duck; DualDeck's own MEDIA configs must not Recover yet.
+            when {
+                AudioFocusPolicy.shouldPause(mode, usages) ->
+                    apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+                AudioFocusPolicy.shouldDuck(usages) ->
+                    apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK)
+            }
+            return
+        }
         when {
             AudioFocusPolicy.shouldPause(mode, usages) ->
                 apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
-            AudioFocusPolicy.shouldDuck(usages) ->
+            AudioFocusPolicy.shouldDuck(usages) && !ignoreStickyDuck ->
                 apply(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK)
             resumeOnGain || ducked ->
                 apply(AudioManager.AUDIOFOCUS_GAIN)
         }
     }
 
+    private fun duckIfNeeded() {
+        if (ducked) return
+        ducked = true
+        onDuck()
+    }
+
     private fun unduckIfNeeded() {
+        main.removeCallbacks(unduckStuck)
         if (!ducked) return
         ducked = false
         onUnduck()
+    }
+
+    private fun armDuckTimeout() {
+        main.removeCallbacks(unduckStuck)
+        main.postDelayed(unduckStuck, AudioFocusPolicy.DUCK_MAX_MS)
+    }
+
+    private fun clearRecheck() {
+        recheckPending = false
+        main.removeCallbacks(recheckTransient)
     }
 
     private fun playbackUsages(): List<Int> {
