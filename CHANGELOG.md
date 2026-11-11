@@ -7,10 +7,10 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-11
 
-Published on this repo’s Releases page (**versionCode 158** / versionName 1.3.6). Feature overview: [README](README.md). SHA-256 of the APK and source tarball are recorded after this GitHub Release (sibling `.sha256` files on the download).
+Published on this repo’s Releases page (**versionCode 158** / versionName 1.3.6). Feature overview: [README](README.md).
 
-- **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `37e6d069494ba34ad3096331be506aa4b1cb0531866a3f057791f9569efb2724`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
+- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `152ae21ba9ee4af05275fb3ca7b7bae47a979573f26d026f1a10566bdeb959f2`) — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
