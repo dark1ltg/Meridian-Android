@@ -105,8 +105,8 @@ class DualDeck(
         pauseBoth()
     }
 
-    fun pauseBoth() {
-        if (crossfading) finishFade(immediate = true, notify = true)
+    fun pauseBoth(notifySettle: Boolean = false) {
+        if (crossfading) finishFade(immediate = true, notify = notifySettle)
         // Allow STATE_ENDED after resume if we paused inside the near-end window.
         advanceEmitted = false
         a.pause()
@@ -114,7 +114,21 @@ class DualDeck(
     }
 
     fun resumeActive() {
-        active.play()
+        if (active.mediaItemCount <= 0 || active.currentMediaItem == null) return
+        when (active.playbackState) {
+            Player.STATE_ENDED -> {
+                // A track that finished during a call must not sit silent on play().
+                if (!advanceEmitted) {
+                    advanceEmitted = true
+                    onEnded()
+                }
+            }
+            Player.STATE_IDLE -> {
+                active.prepare()
+                active.play()
+            }
+            else -> active.play()
+        }
     }
 
     fun hasMedia(): Boolean = active.mediaItemCount > 0 && active.currentMediaItem != null

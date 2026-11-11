@@ -43,12 +43,12 @@ class PlaybackService : MediaSessionService() {
     private var advancing = false
     /** Bumped on UI setMediaItem/play so a late finished_current cannot overwrite the tap. */
     private var transportEpoch = 0
-    private var pendingAfterHold: TrackRow? = null
+    private var pendingAfterHold: MediaItem? = null
     private val noisy = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
-                pauseTransport(releaseFocus = true)
-            }
+            if (intent?.action != AudioManager.ACTION_AUDIO_BECOMING_NOISY) return
+            // Unplug during a call must not drop pendingAfterHold / abandon focus.
+            pauseTransport(releaseFocus = focus?.isYielding() != true)
         }
     }
 
@@ -120,7 +120,10 @@ class PlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
-        val keep = startInForegroundRequired || decks?.isAudible() == true || decks?.hasMedia() == true
+        val keep = startInForegroundRequired ||
+            decks?.isAudible() == true ||
+            decks?.hasMedia() == true ||
+            holdingForResume()
         try {
             super.onUpdateNotification(session, keep)
         } catch (e: RuntimeException) {
@@ -137,7 +140,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (decks?.isAudible() == true) return
+        if (decks?.isAudible() == true || holdingForResume()) return
         stopSelf()
     }
 
@@ -189,21 +192,35 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    private fun holdingForResume(): Boolean {
+        return focus?.isYielding() == true || pendingAfterHold != null
+    }
+
     private fun playTrack(track: TrackRow) {
+        playMedia(MediaItems.fromTrack(track))
+    }
+
+    private fun playMedia(item: MediaItem) {
+        // Do not re-request while yielding: a grant would clear resumeOnGain and
+        // start audio over an active call.
+        if (focus?.isYielding() == true) {
+            pendingAfterHold = item
+            return
+        }
         focus?.request()
         if (focus?.isYielding() == true) {
-            pendingAfterHold = track
+            pendingAfterHold = item
             return
         }
         pendingAfterHold = null
-        decks?.play(MediaItems.fromTrack(track))
+        decks?.play(item)
     }
 
     private fun resumeAfterHold() {
         val pending = pendingAfterHold
         pendingAfterHold = null
         if (pending != null) {
-            playTrack(pending)
+            playMedia(pending)
         } else {
             decks?.resumeActive()
         }
@@ -307,8 +324,7 @@ class PlaybackService : MediaSessionService() {
         override fun setMediaItem(mediaItem: MediaItem) {
             transportEpoch += 1
             advancing = false
-            focus?.request()
-            decks?.play(mediaItem)
+            playMedia(mediaItem)
         }
 
         override fun setMediaItem(mediaItem: MediaItem, resetPosition: Boolean) {
@@ -317,7 +333,9 @@ class PlaybackService : MediaSessionService() {
 
         override fun setMediaItem(mediaItem: MediaItem, startPositionMs: Long) {
             setMediaItem(mediaItem)
-            if (startPositionMs > 0) decks?.seek(startPositionMs)
+            if (startPositionMs > 0 && focus?.isYielding() != true) {
+                decks?.seek(startPositionMs)
+            }
         }
 
         override fun setMediaItems(mediaItems: MutableList<MediaItem>) {
@@ -342,6 +360,7 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun play() {
+            if (focus?.isYielding() == true) return
             focus?.request()
             if (focus?.isYielding() == true) return
             decks?.resumeActive()
@@ -354,6 +373,7 @@ class PlaybackService : MediaSessionService() {
         override fun stop() {
             transportEpoch += 1
             advancing = false
+            pendingAfterHold = null
             focus?.abandon()
             decks?.stopAll()
         }

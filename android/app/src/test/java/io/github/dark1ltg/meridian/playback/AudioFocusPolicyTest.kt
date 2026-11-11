@@ -162,4 +162,38 @@ class AudioFocusPolicyTest {
             ),
         )
     }
+
+    @Test
+    fun navigationGuidanceDucksNotPauses() {
+        assertEquals(
+            Decision.Duck,
+            AudioFocusPolicy.decide(
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+                AudioManager.MODE_NORMAL,
+                playbackUsages = listOf(
+                    AudioAttributes.USAGE_MEDIA,
+                    AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE,
+                ),
+            ),
+        )
+        assertEquals(
+            Decision.Duck,
+            AudioFocusPolicy.decide(
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK,
+                AudioManager.MODE_NORMAL,
+                playbackUsages = listOf(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE),
+            ),
+        )
+        assertFalse(
+            AudioFocusPolicy.shouldPause(
+                AudioManager.MODE_NORMAL,
+                listOf(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE),
+            ),
+        )
+        assertTrue(
+            AudioFocusPolicy.shouldDuck(
+                listOf(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE),
+            ),
+        )
+    }
 }

@@ -7,12 +7,15 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-11
 
-Published on this repo’s Releases page (**versionCode 156** / versionName 1.3.6). Feature overview: [README](README.md). SHA-256 of the APK and source tarball are recorded after this GitHub Release (sibling `.sha256` files on the download).
+Published on this repo’s Releases page (**versionCode 157** / versionName 1.3.6). Feature overview: [README](README.md). SHA-256 of the APK and source tarball are recorded after this GitHub Release (sibling `.sha256` files on the download).
 
 - **`Meridian-1.3.6-arm64.apk`** — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
 - **`Meridian-1.3.6-src.tar.gz`** — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 157
+- **Playback holds**: in-app play/skip during a call no longer starts audio over the call; swiping Meridian away during a hold still resumes after; headphone unplug during a hold keeps the queued track; a track that ended on hold advances on resume; maps navigation ducks instead of pausing; alarms/ringtones duck during the 400ms focus recheck; stuck notification ducks time out; pause mid-fade does not credit the outgoing track
 
 ### versionCode 156
 - **Background play**: music keeps going when you leave Meridian; pauses only for calls, alarms, and other media (not app-switch focus blips). Next track is stashed across a call instead of dropping the queue. Notification pings duck volume instead of pausing.

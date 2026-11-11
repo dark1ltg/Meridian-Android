@@ -11,6 +11,9 @@ internal object AudioFocusPolicy {
     /** Wait for ringtone / MODE_IN_CALL to show up after a bare transient loss. */
     const val TRANSIENT_RECHECK_MS = 400L
 
+    /** Cap a duck so a stuck OEM notification config cannot leave volume at 0.2 forever. */
+    const val DUCK_MAX_MS = 5_000L
+
     enum class Decision {
         PauseUntilUser,
         PauseAndResume,
@@ -70,12 +73,13 @@ internal object AudioFocusPolicy {
         AudioAttributes.USAGE_VOICE_COMMUNICATION,
         AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING,
         AudioAttributes.USAGE_ASSISTANT,
-        AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE,
     )
 
     private val DUCK_USAGES = setOf(
         AudioAttributes.USAGE_NOTIFICATION,
         AudioAttributes.USAGE_NOTIFICATION_EVENT,
         AudioAttributes.USAGE_ASSISTANCE_SONIFICATION,
+        // Turn-by-turn prompts are short; pausing on every instruction is worse than ducking.
+        AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE,
     )
 }
