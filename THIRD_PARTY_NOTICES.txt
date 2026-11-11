@@ -43,7 +43,8 @@ Texts:    third-party/numpy/
 ----------------------------------------------------------------------------
 aubio
 ----------------------------------------------------------------------------
-Purpose:  Fast tempo / onset features for mood-map energy (kinetic axis)
+Purpose:  Fast tempo / onset features for mood-map energy (kinetic axis).
+          Android release APK ships this as libmeridian_aubio.so (aubio 0.4.9).
 License:  GPL-3.0-or-later (see upstream COPYING)
 Texts:    third-party/aubio/
 
@@ -104,6 +105,16 @@ License:  FFmpeg n6.1.1 configured `--disable-everything` plus listed audio
           decoders (LGPL-2.1+ / GPL-2.1+ as published by FFmpeg; this tree is
           GPL-3.0-only so redistribution is as a GPL combined work).
           JNI wrapper: Apache-2.0 (AndroidX Media 1.4.1 ffmpeg_jni.cc).
+Rebuild:  android/scripts/build-media3-ffmpeg.sh
+
+----------------------------------------------------------------------------
+meridian_pcm (libmeridian_pcm.so) on Android
+----------------------------------------------------------------------------
+Purpose:  Preferred Listen decoder in v1.3.6 versionCode 155 — FFmpeg avformat
+          seek + swresample to mono float32 LE @ 11025 Hz (one open per file).
+          MediaCodec, then libffmpegJNI.so, are fallbacks.
+License:  Same FFmpeg n6.1.1 stack as libffmpegJNI.so (GPL combined work).
+          JNI glue is this project (GPL-3.0-only).
 Rebuild:  android/scripts/build-media3-ffmpeg.sh
 
 ----------------------------------------------------------------------------
