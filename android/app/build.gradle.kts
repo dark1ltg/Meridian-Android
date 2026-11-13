@@ -72,6 +72,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     ndkVersion = "26.3.11579264"
     externalNativeBuild {

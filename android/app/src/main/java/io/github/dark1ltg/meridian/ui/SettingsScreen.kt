@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.dark1ltg.meridian.BuildConfig
 import io.github.dark1ltg.meridian.data.FolderPaths
 import io.github.dark1ltg.meridian.ui.theme.Card
 import io.github.dark1ltg.meridian.ui.theme.Cream
@@ -183,7 +184,11 @@ fun SettingsScreen(
         )
         SettingsRow(Icons.Outlined.Tune, "Listening mode", "Focus, Wander, Charge, Dim")
         SettingsRow(Icons.Outlined.Shield, "Privacy", "Nothing leaves this phone") { onOpen(SettingsPage.Privacy) }
-        SettingsRow(Icons.Outlined.Info, "About", "Meridian 1.3.6") { onOpen(SettingsPage.About) }
+        SettingsRow(
+            Icons.Outlined.Info,
+            "About",
+            "Meridian ${BuildConfig.VERSION_NAME} · ${BuildConfig.VERSION_CODE}",
+        ) { onOpen(SettingsPage.About) }
         Spacer(Modifier.height(12.dp))
         Text(
             "Offline. Local. Yours.",

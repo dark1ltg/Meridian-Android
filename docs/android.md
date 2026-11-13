@@ -37,9 +37,9 @@ Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Androi
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
-| **APK SHA-256** | `d8e9e686564f1327c245a5b57efe09552facbcbeb48be54d48cee4eaea67e201` |
+| **APK SHA-256** | `c108050b73187d36924e8d32c3859f0c3985e016410e1b3ec36e23f345309e16` |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB) |
-| **Source SHA-256** | `aec7486d60d5bcb4c2068d25225a1648fa2b25391b1098d946f05eb7b5e9c241` |
+| **Source SHA-256** | `a471282f2f1765aa2e039a8cdadd0ba78805e0948e2e735051adcf952e6bafdb` |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 
@@ -48,7 +48,7 @@ sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
-The release APK is signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`) so a later GitHub APK can replace this install. Play Store is not used. CI recipe: `.github/workflows/release-apk.yml` (`assembleRelease -Pabi=arm64-v8a` + `git archive` source tarball).
+The release APK is signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`) so a later GitHub APK can replace this install. Play Store is not used. CI recipe: `.github/workflows/release-apk.yml` (`assembleRelease -Pabi=arm64-v8a`, then `android/scripts/stamp-release-docs.py` writes versionCode / SHA-256 into README, changelog, and release notes before the source tarball and GitHub Release are published).
 
 ## Build
 

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.dark1ltg.meridian.BuildConfig
 import io.github.dark1ltg.meridian.ui.theme.Cream
 import io.github.dark1ltg.meridian.ui.theme.Ink
 import io.github.dark1ltg.meridian.ui.theme.Mute
@@ -39,7 +40,7 @@ fun SettingsDetailScreen(page: SettingsPage, onBack: () -> Unit, modifier: Modif
             Opening Meridian from those controls still requires your device lock.
         """.trimIndent()
         SettingsPage.About -> "About" to """
-            Meridian 1.3.6
+            Meridian ${BuildConfig.VERSION_NAME} (versionCode ${BuildConfig.VERSION_CODE})
             GPL-3.0-only
 
             Your library is a night sky. Navigate by feel.

@@ -9,14 +9,16 @@ All notable Meridian releases are listed here.
 
 Published on this repo’s Releases page (**versionCode 159** / versionName 1.3.6). Feature overview: [README](README.md).
 
-- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `d8e9e686564f1327c245a5b57efe09552facbcbeb48be54d48cee4eaea67e201`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
-- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `aec7486d60d5bcb4c2068d25225a1648fa2b25391b1098d946f05eb7b5e9c241`) — full tree at the release commit
+- **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `c108050b73187d36924e8d32c3859f0c3985e016410e1b3ec36e23f345309e16`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
+- **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `a471282f2f1765aa2e039a8cdadd0ba78805e0948e2e735051adcf952e6bafdb`) — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
 ### versionCode 159
 - **Chrome**: mini-player Previous / Pause / Next on Map and Queue; two-line titles; compact Listen chip instead of the full-width job strip; Search labeled next to the icon
 - **Copy**: Queue “From where you aimed · evening” + outlined **Renew queue**; empty matrix cells say “Nothing parked yet”; Why overlay speaks fit / history / mood in plain English with a play triangle
+- **Release docs**: each APK/source publish stamps versionCode and SHA-256 into README, changelog, and release notes, and points `v1.3.6` at that tree
+- **About**: Settings shows versionName and versionCode from the APK (`BuildConfig`)
 
 ### versionCode 158
 - **Playback holds (2)**: pause during a call no longer abandons yield (Play cannot start over the call); explicit Play after another music app works; denied audio focus never starts the decks; Next during a fade credits the outgoing song; same-track skip after near-end does not restart; pause then Recents-swipe keeps the session; seek/start position survive a call; app-switch no longer hedge-ducks; long notification ducks last until the ping ends (stuck OEM ducks time out after ~30s); FGS start denial retries
