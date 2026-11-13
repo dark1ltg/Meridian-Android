@@ -5,9 +5,9 @@ Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) — ~36.2 MB, arm64-v8a, Android 8.0+ |
-| **APK SHA-256** | `c108050b73187d36924e8d32c3859f0c3985e016410e1b3ec36e23f345309e16` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
+| **APK SHA-256** | `e1255eb81774191e39870d5cd449b04eb9f663fdbdb7a0f1941ec7d18bbfa3b0` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) — ~5.5 MB, full tree at this release commit |
-| **Source SHA-256** | `a471282f2f1765aa2e039a8cdadd0ba78805e0948e2e735051adcf952e6bafdb` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **Source SHA-256** | `efddf6123908b496de27fe05e66a914459949b2cccb6c317a629f487d3f91d7a` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
