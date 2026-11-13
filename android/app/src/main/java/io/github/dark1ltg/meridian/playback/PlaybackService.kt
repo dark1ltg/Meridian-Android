@@ -380,6 +380,18 @@ class PlaybackService : MediaSessionService() {
             setMediaItem(item, startPositionMs)
         }
 
+        override fun replaceMediaItem(index: Int, mediaItem: MediaItem) {
+            setMediaItem(mediaItem)
+        }
+
+        override fun replaceMediaItems(
+            fromIndex: Int,
+            toIndex: Int,
+            mediaItems: MutableList<MediaItem>,
+        ) {
+            mediaItems.firstOrNull()?.let { setMediaItem(it) }
+        }
+
         override fun pause() {
             if (focus?.isHoldingForCall() == true) {
                 focus?.markPausedUntilUser()

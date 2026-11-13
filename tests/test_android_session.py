@@ -627,6 +627,29 @@ def test_finished_current_ignores_stale_ended_id(tmp_path: Path) -> None:
     session.close()
 
 
+def test_skip_from_current_advances_context_queue(tmp_path: Path) -> None:
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "a.mp3").write_bytes(b"ID3")
+    (music / "b.mp3").write_bytes(b"ID3")
+    (music / "c.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    ids = [t.id for t in session.library.all_tracks()]
+    a, b, c = ids[0], ids[1], ids[2]
+    session.queue_ids = [a, b, c]
+    session.queue_index = 0
+    session.play(a)
+    snap = session.skip(position_ms=63_000, from_id=a)
+    assert session.queue_ids[session.queue_index] == b
+    assert snap["current"]["id"] == b
+    snap = session.skip(position_ms=1_000, from_id=b)
+    assert session.queue_ids[session.queue_index] == c
+    assert snap["current"]["id"] == c
+    session.close()
+
+
 def test_skip_from_id_does_not_double_advance(tmp_path: Path) -> None:
     music = tmp_path / "Music"
     music.mkdir()

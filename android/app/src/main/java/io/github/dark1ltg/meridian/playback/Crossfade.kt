@@ -20,6 +20,19 @@ object Crossfade {
         return playing && !currentId.isNullOrEmpty() && currentId != newId
     }
 
+    /**
+     * Outgoing deck is armed for a crossfade. Use playWhenReady (not
+     * ExoPlayer.isPlaying): BUFFERING still counts, pause / idle / ended do not.
+     */
+    fun outgoingArmed(
+        playWhenReady: Boolean,
+        hasCurrentId: Boolean,
+        idle: Boolean,
+        ended: Boolean,
+    ): Boolean {
+        return playWhenReady && hasCurrentId && !idle && !ended
+    }
+
     fun shouldArmNearEnd(
         crossfading: Boolean,
         advanceEmitted: Boolean,

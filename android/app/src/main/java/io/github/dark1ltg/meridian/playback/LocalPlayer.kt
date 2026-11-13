@@ -81,6 +81,8 @@ class LocalPlayer(app: Application) {
     }
 
     fun skip() {
+        // Prefer SessionViewModel.skip() (engine + setMediaItem). seekToNext is a
+        // no-op on DualDeck's single-item timeline even when QueuePlayer overrides it.
         whenReady { it.seekToNext() }
     }
 

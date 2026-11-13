@@ -104,7 +104,18 @@ class DualDeck(
         // after hardCut so deferred play credit commits exactly once.
         val wasFading = crossfading
         if (wasFading) finishFade(immediate = true, notify = false)
-        val canFade = Crossfade.shouldFade(active.isPlaying, active.currentMediaItem?.mediaId, item.mediaId)
+        // isPlaying is false while BUFFERING, so a tap/skip mid-song hard-cut
+        // instead of the ~3s overlap. Fade whenever the outgoing deck is armed.
+        val canFade = Crossfade.shouldFade(
+            Crossfade.outgoingArmed(
+                playWhenReady = active.playWhenReady,
+                hasCurrentId = !active.currentMediaItem?.mediaId.isNullOrEmpty(),
+                idle = active.playbackState == Player.STATE_IDLE,
+                ended = active.playbackState == Player.STATE_ENDED,
+            ),
+            active.currentMediaItem?.mediaId,
+            item.mediaId,
+        )
         advanceEmitted = false
         incomingEnded = false
         if (canFade) {

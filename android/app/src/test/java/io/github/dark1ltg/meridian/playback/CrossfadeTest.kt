@@ -23,6 +23,22 @@ class CrossfadeTest {
     }
 
     @Test
+    fun outgoingArmedWhileBufferingNotWhilePaused() {
+        assertTrue(Crossfade.outgoingArmed(playWhenReady = true, hasCurrentId = true, idle = false, ended = false))
+        assertFalse(Crossfade.outgoingArmed(playWhenReady = false, hasCurrentId = true, idle = false, ended = false))
+        assertFalse(Crossfade.outgoingArmed(playWhenReady = true, hasCurrentId = false, idle = false, ended = false))
+        assertFalse(Crossfade.outgoingArmed(playWhenReady = true, hasCurrentId = true, idle = true, ended = false))
+        assertFalse(Crossfade.outgoingArmed(playWhenReady = true, hasCurrentId = true, idle = false, ended = true))
+        assertTrue(
+            Crossfade.shouldFade(
+                Crossfade.outgoingArmed(playWhenReady = true, hasCurrentId = true, idle = false, ended = false),
+                "1",
+                "2",
+            ),
+        )
+    }
+
+    @Test
     fun nearEndIgnoresShortAndEarlyPositions() {
         assertFalse(Crossfade.shouldArmNearEnd(false, false, 8_000, 7_500))
         assertFalse(Crossfade.shouldArmNearEnd(false, false, 240_000, 4_000))

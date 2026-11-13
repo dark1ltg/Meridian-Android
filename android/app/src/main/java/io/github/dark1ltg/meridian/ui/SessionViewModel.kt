@@ -254,13 +254,59 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun skip() {
-        // QueuePlayer.seekToNext owns skipPayload (outgoing id/position during a fade)
-        // so Now Playing and the notification share one engine call.
-        player.skip()
+        // MediaController.seekToNext() no-ops on DualDeck's single-item timeline
+        // (vc152). Advance the context queue here, then DualDeck.play so the
+        // ~3s fade still runs. Lockscreen / notification skip still uses
+        // QueuePlayer.seekToNext.
+        val gen = ++playGeneration
+        playJob?.cancel()
+        playJob = viewModelScope.launch {
+            ensureBoot()
+            if (gen != playGeneration) return@launch
+            val positionMs = _clock.value.positionMs
+            val fromId = player.player?.currentMediaItem?.mediaId?.toIntOrNull()
+                ?: _state.value.snapshot.current?.id
+                ?: 0
+            val snap = withContext(Dispatchers.IO + NonCancellable) {
+                synchronized(playGate) {
+                    if (gen != playGeneration) return@withContext null
+                    engine.call(
+                        "skip",
+                        JSONObject().put("position_ms", positionMs).put("from_id", fromId),
+                    )
+                }
+            } ?: return@launch
+            if (gen != playGeneration) return@launch
+            applySnap(snap)
+            val track = snap.current ?: return@launch
+            playReachable(track, gen)
+        }
     }
 
     fun previous() {
-        player.previous()
+        val positionMs = _clock.value.positionMs
+        // Same >4s rule as lockscreen / PlaybackService — restart before true previous.
+        if (positionMs > 4_000L) {
+            player.seek(0L)
+            _clock.value = _clock.value.copy(positionMs = 0L)
+            return
+        }
+        val gen = ++playGeneration
+        playJob?.cancel()
+        playJob = viewModelScope.launch {
+            ensureBoot()
+            if (gen != playGeneration) return@launch
+            val snap = withContext(Dispatchers.IO + NonCancellable) {
+                synchronized(playGate) {
+                    if (gen != playGeneration) return@withContext null
+                    engine.call("previous")
+                }
+            } ?: return@launch
+            if (gen != playGeneration) return@launch
+            applySnap(snap)
+            val track = snap.current ?: return@launch
+            playReachable(track, gen)
+        }
     }
 
     /** Skip dead files until one opens, or the queue is exhausted. */
