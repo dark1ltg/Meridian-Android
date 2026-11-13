@@ -17,6 +17,7 @@ Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 ### versionCode 159
 - **Chrome**: mini-player Previous / Pause / Next on Map and Queue; two-line titles; compact Listen chip instead of the full-width job strip; Search labeled next to the icon
 - **Copy**: Queue “From where you aimed · evening” + outlined **Renew queue**; empty matrix cells say “Nothing parked yet”; Why overlay speaks fit / history / mood in plain English with a play triangle
+- **Context matrix**: NOW / DEEP / FILL / SHELF cards keep the 2×2 size and scroll inside when a band has more tracks than fit
 - **Release docs**: each APK/source publish stamps versionCode and SHA-256 into README, changelog, and release notes, and points `v1.3.6` at that tree
 - **About**: Settings shows versionName and versionCode from the APK (`BuildConfig`)
 

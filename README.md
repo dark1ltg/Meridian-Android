@@ -36,7 +36,7 @@ Meridian takes a short listen of each song (intro / mid / late), then places it 
 Point the lens, then play what lives there. **Renew queue** rebuilds from the current listen matrix (not shuffle). **Play Context** syncs a stale queue to where you’re aiming without restarting the song that’s already playing. Modes — Focus, Wander, Charge, Dim — steer how adventurous the next picks feel. The Queue tab keeps a mini-player above the tabs so skip/pause stay in reach.
 
 ### Matrix on the sky
-The Context tab shows NOW / DEEP / FILL / SHELF bands over the night sky — what’s close to the lens, what deepens the set, what fills gaps, what’s on the shelf. Empty bands say so in words (“Nothing parked yet”), not a dash.
+The Context tab shows NOW / DEEP / FILL / SHELF bands over the night sky — what’s close to the lens, what deepens the set, what fills gaps, what’s on the shelf. Each band card keeps the 2×2 size and scrolls when that neighborhood is fuller than the box. Empty bands say so in words (“Nothing parked yet”), not a dash.
 
 ### Playback that stays with you
 ~3s dual-deck crossfade between tracks. Play keeps going when you switch apps; it pauses for calls, alarms, and other media. Navigation voice prompts duck the volume instead of stopping. Play and skip during a call wait until the call ends; Pause during a call does not let music come back on the line. Play after another music app still works. Next during a crossfade counts the song you are still hearing. Map and Queue mini-players, Now Playing, lockscreen, and notification Previous / Pause / Next all move the queue. Long titles wrap to two lines on the mini-player. Skip, previous, and finish teach the map without leaving the phone. Play after a cold start loads the last current track.

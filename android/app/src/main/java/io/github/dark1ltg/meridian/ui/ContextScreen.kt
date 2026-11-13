@@ -4,15 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -96,8 +97,7 @@ fun ContextScreen(
         Column(
             Modifier
                 .weight(1f)
-                .padding(horizontal = 12.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(horizontal = 12.dp),
         ) {
             if (empty) {
                 Text(
@@ -108,8 +108,8 @@ fun ContextScreen(
             } else {
                 Row(
                     Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
+                        .weight(1f)
+                        .fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     MatrixCell("NOW", "Closest", Now, snapshot.now, snapshot.current?.id, onPlay, onOpenWhy, Modifier.weight(1f))
@@ -117,8 +117,8 @@ fun ContextScreen(
                 }
                 Row(
                     Modifier
+                        .weight(1f)
                         .fillMaxWidth()
-                        .height(240.dp)
                         .padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -172,30 +172,37 @@ private fun MatrixCell(
                 lineHeight = 16.sp,
             )
         } else {
-            tracks.take(6).forEach { row ->
-                Text(
-                    row.title,
-                    color = if (row.id == currentId) Orange else Ink,
-                    fontFamily = UbuntuCondensed,
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onWhy(row.id) }
-                        .padding(top = 6.dp),
-                )
-                Text(
-                    row.artist,
-                    color = Mute,
-                    fontFamily = UbuntuCondensed,
-                    fontSize = 11.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onPlay(row.id) },
-                )
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(top = 4.dp, bottom = 8.dp),
+            ) {
+                items(tracks, key = { it.id }) { row ->
+                    Text(
+                        row.title,
+                        color = if (row.id == currentId) Orange else Ink,
+                        fontFamily = UbuntuCondensed,
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onWhy(row.id) }
+                            .padding(top = 6.dp),
+                    )
+                    Text(
+                        row.artist,
+                        color = Mute,
+                        fontFamily = UbuntuCondensed,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPlay(row.id) },
+                    )
+                }
             }
         }
     }
