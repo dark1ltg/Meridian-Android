@@ -32,7 +32,7 @@ Release CI builds `libffmpegJNI.so` via `android/scripts/build-media3-ffmpeg.sh`
 
 ## Install (release APK + source)
 
-Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 158**, published **2026-11-11**).
+Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Android/releases)**. Current: **[v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)** (**versionCode 159**, published **2026-11-12**).
 
 | Asset | |
 |---|---|

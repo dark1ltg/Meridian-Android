@@ -1,4 +1,4 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-11**, **versionCode 158**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-12**, **versionCode 159**).
 
 ## Downloads
 
@@ -36,7 +36,7 @@ Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#hig
 
 ## Notes
 
-- Minimum **Android 8.0 (API 26)**; **versionCode 158** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 159** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **native PCM** (`libmeridian_pcm.so`), then **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file

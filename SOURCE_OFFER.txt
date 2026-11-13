@@ -4,7 +4,7 @@ Written offer for Corresponding Source
 Meridian is free software under the GNU General Public License version 3.
 
 Android APK builds on this repository are accompanied by a matching source
-archive on the same GitHub Release (current v1.3.6, versionCode 158:
+archive on the same GitHub Release (current v1.3.6, versionCode 159:
 Meridian-1.3.6-src.tar.gz),
 which is the preferred form of Meridian source used to produce that APK.
 Native companions (aubio, meridian_pcm, Media3 FFmpeg JNI) are built from

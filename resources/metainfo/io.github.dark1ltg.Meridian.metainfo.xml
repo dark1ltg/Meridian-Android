@@ -43,17 +43,17 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="1.3.6" date="2026-11-11">
+    <release version="1.3.6" date="2026-11-12">
       <description>
         <p>
-          Current product version (Android APK versionCode 158 / versionName
+          Current product version (Android APK versionCode 159 / versionName
           1.3.6). Offline mood map, on-device Listen (native PCM then MediaCodec
           then Media3 FFmpeg), context queue with Renew / Play Context, dual-deck
           ~3s crossfade, play continues in other apps (pauses for calls and
           alarms; navigation prompts duck; play/skip during a call wait;
           Pause during a call does not restart on the line),
-          MediaStore + SAF libraries, and queue-driven Now Playing
-          Previous / Next.
+          MediaStore + SAF libraries, Map / Queue mini-player Previous / Pause /
+          Next, and queue-driven Now Playing Previous / Next.
         </p>
       </description>
     </release>
