@@ -37,9 +37,9 @@ Published builds are on **[Releases](https://github.com/dark1ltg/Meridian-Androi
 | Asset | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
-| **APK SHA-256** | `ca672dff6224e23f1fd01be8ffcc4399fb761f8b375dca4853e29c65f49167d5` |
+| **APK SHA-256** | `66eb5fd7871634f6eddded056bbc4b22b33c35201e83351b706c3130a0a802a4` |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB) |
-| **Source SHA-256** | `a2a255d75510f856a2c3e523ae11c989d1fb46af51aea0c4bc982aa5d1e7c652` |
+| **Source SHA-256** | `597dd99e89ff1526afc75c8d6d7502a59c7b8050d6dff7705d0d9fb2003ea825` |
 | **ABI** | arm64-v8a |
 | **Native** | `libmeridian_aubio.so` + `libffmpegJNI.so` + `libmeridian_pcm.so` |
 

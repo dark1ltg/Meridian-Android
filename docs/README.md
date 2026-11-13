@@ -15,8 +15,8 @@ Guides for how Meridian listens to your files and places them on the mood map.
 | **OS** | Android **8.0+** (API 26) |
 | **CPU** | **arm64-v8a** (Unihertz Titan 2, Pixel, and most current phones) |
 | **Install** | Sideload [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (`adb install -r` or open the file) |
-| **APK checksum** | SHA-256 `ca672dff6224e23f1fd01be8ffcc4399fb761f8b375dca4853e29c65f49167d5` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
-| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB; SHA-256 `a2a255d75510f856a2c3e523ae11c989d1fb46af51aea0c4bc982aa5d1e7c652`) |
+| **APK checksum** | SHA-256 `66eb5fd7871634f6eddded056bbc4b22b33c35201e83351b706c3130a0a802a4` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
+| **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB; SHA-256 `597dd99e89ff1526afc75c8d6d7502a59c7b8050d6dff7705d0d9fb2003ea825`) |
 | **Signature** | Public sideload key in `android/keystore/` (not Play Store); cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9` |
 
 ## System requirements (Linux AppImage, sibling desktop tree)
