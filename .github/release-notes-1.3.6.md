@@ -20,6 +20,7 @@ adb install -r Meridian-1.3.6-arm64.apk
 - Listen progress is a compact chip instead of a full-width banner; Search is labeled next to the icon
 - Queue says “From where you aimed · evening” with an outlined **Renew queue** control
 - Empty matrix cells say “Nothing parked yet”; Why this track is plain English (no raw valence/confidence floats)
+- NOW / DEEP / FILL / SHELF cards keep the 2×2 size and scroll inside when a band has more tracks than fit
 
 ## What’s new in versionCode 158
 
