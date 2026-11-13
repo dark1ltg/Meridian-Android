@@ -59,9 +59,9 @@ Offline only. No telemetry, no account, no cloud sync. GPL-3.0.
 | | |
 |---|---|
 | **APK** | [`Meridian-1.3.6-arm64.apk`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk) (~36.2 MB) |
-| **APK SHA-256** | `37e6d069494ba34ad3096331be506aa4b1cb0531866a3f057791f9569efb2724` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
+| **APK SHA-256** | `d8e9e686564f1327c245a5b57efe09552facbcbeb48be54d48cee4eaea67e201` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-arm64.apk.sha256)) |
 | **Source** | [`Meridian-1.3.6-src.tar.gz`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz) (~5.5 MB) |
-| **Source SHA-256** | `152ae21ba9ee4af05275fb3ca7b7bae47a979573f26d026f1a10566bdeb959f2` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
+| **Source SHA-256** | `aec7486d60d5bcb4c2068d25225a1648fa2b25391b1098d946f05eb7b5e9c241` ([`.sha256`](https://github.com/dark1ltg/Meridian-Android/releases/download/v1.3.6/Meridian-1.3.6-src.tar.gz.sha256)) |
 
 ```bash
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
