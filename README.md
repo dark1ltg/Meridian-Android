@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Android 8+](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
-[![Latest](https://img.shields.io/badge/release-v1.3.6%20·%20vc159-informational.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
+[![Latest](https://img.shields.io/badge/release-v1.3.6%20·%20vc160-informational.svg)](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6)
 
 **Your library is a night sky. Navigate by feel.**
 
@@ -54,7 +54,7 @@ Offline only. No telemetry, no account, no cloud sync. GPL-3.0.
 
 ## Get the app
 
-**Current release:** [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) · **versionCode 159** · arm64-v8a · Android 8.0+
+**Current release:** [v1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) · **versionCode 160** · arm64-v8a · Android 8.0+
 
 | | |
 |---|---|
