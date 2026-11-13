@@ -85,8 +85,10 @@ class DualDeck(
     fun play(item: MediaItem) {
         val currentId = active.currentMediaItem?.mediaId
         if (currentId != null && currentId == item.mediaId) {
-            // Already this track (skip no-op after near-end advance, or same-id replay).
-            if (crossfading) finishFade(immediate = true, notify = false)
+            // Already this track: a near-end skip no-op, or replay. Do not abort a
+            // live fade into this id — that cut the ~3s overlap when Next raced
+            // finished_current and then playTrack'd the incoming song again.
+            if (crossfading) return
             when (active.playbackState) {
                 Player.STATE_ENDED -> {
                     active.seekTo(0)
@@ -160,13 +162,17 @@ class DualDeck(
 
     fun hasMedia(): Boolean = active.mediaItemCount > 0 && active.currentMediaItem != null
 
-    /** Track the user is still hearing — outgoing during a fade, else active. */
+    /**
+     * Engine-current id for skip `from_id`. During a fade that is the incoming
+     * deck (queue already moved). Outgoing id trips the stale-skip guard and
+     * Next during a natural fade becomes a no-op.
+     */
     fun skipFromId(): String? {
-        return (outgoing ?: active).currentMediaItem?.mediaId
+        return active.currentMediaItem?.mediaId
     }
 
     fun skipPositionMs(): Long {
-        return (outgoing ?: active).currentPosition.coerceAtLeast(0L)
+        return active.currentPosition.coerceAtLeast(0L)
     }
 
     fun stopAll(notifySettle: Boolean = true) {

@@ -650,6 +650,30 @@ def test_skip_from_current_advances_context_queue(tmp_path: Path) -> None:
     session.close()
 
 
+def test_skip_during_natural_fade_advances_incoming(tmp_path: Path) -> None:
+    """Next during A→B fade should skip B (engine current), not no-op on A's id."""
+    music = tmp_path / "Music"
+    music.mkdir()
+    (music / "a.mp3").write_bytes(b"ID3")
+    (music / "b.mp3").write_bytes(b"ID3")
+    (music / "c.mp3").write_bytes(b"ID3")
+    session = AndroidSession()
+    session.initialize(str(tmp_path / "data"), str(music))
+    session.scan()
+    ids = [t.id for t in session.library.all_tracks()]
+    a, b, c = ids[0], ids[1], ids[2]
+    session.queue_ids = [a, b, c]
+    session.queue_index = 0
+    session.play(a)
+    session.finished_current(ended_id=a)
+    assert session.queue_ids[session.queue_index] == b
+    assert session._xfade_out == a
+    snap = session.skip(position_ms=400, from_id=b)
+    assert snap["current"]["id"] == c
+    assert session.queue_ids[session.queue_index] == c
+    session.close()
+
+
 def test_skip_from_id_does_not_double_advance(tmp_path: Path) -> None:
     music = tmp_path / "Music"
     music.mkdir()

@@ -392,6 +392,32 @@ class PlaybackService : MediaSessionService() {
             mediaItems.firstOrNull()?.let { setMediaItem(it) }
         }
 
+        override fun addMediaItem(mediaItem: MediaItem) {
+            setMediaItem(mediaItem)
+        }
+
+        override fun addMediaItem(index: Int, mediaItem: MediaItem) {
+            setMediaItem(mediaItem)
+        }
+
+        override fun addMediaItems(mediaItems: MutableList<MediaItem>) {
+            setMediaItems(mediaItems)
+        }
+
+        override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
+            setMediaItems(mediaItems)
+        }
+
+        override fun isPlaying(): Boolean {
+            val dual = decks ?: return super.isPlaying()
+            return !dual.isTransportPaused() && dual.isAudible()
+        }
+
+        override fun getPlayWhenReady(): Boolean {
+            val dual = decks ?: return super.getPlayWhenReady()
+            return !dual.isTransportPaused() && dual.hasMedia()
+        }
+
         override fun pause() {
             if (focus?.isHoldingForCall() == true) {
                 focus?.markPausedUntilUser()

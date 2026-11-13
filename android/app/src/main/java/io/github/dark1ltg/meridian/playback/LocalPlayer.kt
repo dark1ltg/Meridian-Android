@@ -63,11 +63,10 @@ class LocalPlayer(app: Application) {
     }
 
     fun play(track: TrackRow) {
-        whenReady { p ->
-            p.setMediaItem(MediaItems.fromTrack(track))
-            p.prepare()
-            p.play()
-        }
+        // DualDeck.play already prepare+plays (and starts the ~3s fade). A follow-up
+        // prepare()/play() hits the incoming deck after session.setPlayer and can
+        // look like a pause/resume at the start of the overlap.
+        whenReady { p -> p.setMediaItem(MediaItems.fromTrack(track)) }
     }
 
     fun seek(ms: Long) {
