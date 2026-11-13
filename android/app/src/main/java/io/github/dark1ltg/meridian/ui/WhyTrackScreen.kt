@@ -1,6 +1,7 @@
 package io.github.dark1ltg.meridian.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Star
@@ -48,10 +50,7 @@ fun WhyTrackScreen(
     onPlay: () -> Unit,
     onViewInMap: () -> Unit,
 ) {
-    val (glow, kinetic) = moodWord(track.valence, track.energy)
-    val lines = track.why.lines().map { it.trim() }.filter { it.isNotEmpty() }
-    val headline = lines.getOrNull(1) ?: defaultHeadline(track)
-    val detail = lines.drop(2).joinToString("\n").ifBlank { defaultDetail(track, snapshot) }
+    val cards = whyCards(track, snapshot.bandLabel, snapshot.mode)
     Box(Modifier.fillMaxSize()) {
         Sky(seed = 21)
         Column(
@@ -83,21 +82,10 @@ fun WhyTrackScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState()),
             ) {
-                WhyRow(Icons.Outlined.Star, headline, "$glow · $kinetic · ${"%.0f".format(track.fit * 100)}% fit")
-                WhyRow(
-                    Icons.Outlined.Place,
-                    "Importance ${"%.0f".format(track.importance * 100)}%",
-                    buildString {
-                        if (track.loved) append("Loved. ")
-                        if (track.pinned) append("Pinned on the map. ")
-                        append("Played ${track.playCount}× · skipped ${track.skipCount}×")
-                    },
-                )
-                WhyRow(
-                    Icons.Outlined.Map,
-                    snapshot.bandLabel.ifBlank { "Clock band" } + " · ${snapshot.mode.replaceFirstChar { it.uppercase() }}",
-                    detail,
-                )
+                val icons = listOf(Icons.Outlined.Star, Icons.Outlined.Place, Icons.Outlined.Map)
+                cards.forEachIndexed { index, card ->
+                    WhyRow(icons[index], card.title)
+                }
             }
             Button(
                 onClick = onViewInMap,
@@ -123,41 +111,28 @@ fun WhyTrackScreen(
                     Text(track.title, color = Ink, maxLines = 1)
                     Text(track.artist, color = Mute, fontSize = 12.sp, maxLines = 1)
                 }
-                Button(
-                    onClick = onPlay,
-                    colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Color.White),
-                    shape = CircleShape,
-                    modifier = Modifier.size(48.dp),
+                Box(
+                    Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Orange)
+                        .clickable(onClick = onPlay),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text("▶")
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = "Play",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp),
+                    )
                 }
             }
         }
     }
 }
 
-private fun defaultHeadline(track: TrackRow): String {
-    return when (track.quadrant) {
-        "now" -> "NOW — closest to the lens"
-        "deep" -> "DEEP — worth sitting with"
-        "fill" -> "FILL — keeps the room going"
-        "shelf" -> "SHELF — parked until later"
-        else -> "Fits the current mood"
-    }
-}
-
-private fun defaultDetail(track: TrackRow, snapshot: EngineSnapshot): String {
-    val parts = mutableListOf<String>()
-    if (track.loved) parts += "Loved"
-    if (track.pinned) parts += "Pinned"
-    parts += "confidence ${"%.2f".format(track.confidence)}"
-    if (track.confidenceNote.isNotBlank()) parts += track.confidenceNote
-    if (snapshot.bandLabel.isNotBlank()) parts += snapshot.bandLabel
-    return parts.joinToString(" · ")
-}
-
 @Composable
-private fun WhyRow(icon: ImageVector, title: String, body: String) {
+private fun WhyRow(icon: ImageVector, title: String) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -165,12 +140,14 @@ private fun WhyRow(icon: ImageVector, title: String, body: String) {
             .clip(RoundedCornerShape(16.dp))
             .background(Card)
             .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
-        Icon(icon, contentDescription = null, tint = Orange, modifier = Modifier.padding(end = 12.dp))
-        Column {
-            Text(title, color = Ink, fontWeight = FontWeight.SemiBold)
-            Text(body, color = Mute, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
-        }
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = Orange,
+            modifier = Modifier.padding(end = 12.dp, top = 2.dp),
+        )
+        Text(title, color = Ink, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
     }
 }

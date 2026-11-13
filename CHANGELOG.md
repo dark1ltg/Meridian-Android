@@ -14,6 +14,10 @@ Published on this repo’s Releases page (**versionCode 158** / versionName 1.3.
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
 
+### versionCode 159
+- **Chrome**: mini-player Previous / Pause / Next on Map and Queue; two-line titles; compact Listen chip instead of the full-width job strip; Search labeled next to the icon
+- **Copy**: Queue “From where you aimed · evening” + outlined **Renew queue**; empty matrix cells say “Nothing parked yet”; Why overlay speaks fit / history / mood in plain English with a play triangle
+
 ### versionCode 158
 - **Playback holds (2)**: pause during a call no longer abandons yield (Play cannot start over the call); explicit Play after another music app works; denied audio focus never starts the decks; Next during a fade credits the outgoing song; same-track skip after near-end does not restart; pause then Recents-swipe keeps the session; seek/start position survive a call; app-switch no longer hedge-ducks; long notification ducks last until the ping ends (stuck OEM ducks time out after ~30s); FGS start denial retries
 

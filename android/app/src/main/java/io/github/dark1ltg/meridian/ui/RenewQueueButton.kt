@@ -1,7 +1,13 @@
 package io.github.dark1ltg.meridian.ui
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -9,9 +15,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.dark1ltg.meridian.ui.theme.Cream
 import io.github.dark1ltg.meridian.ui.theme.Ink
@@ -67,9 +75,9 @@ fun RenewQueueButton(
         )
     }
 
-    TextButton(
+    OutlinedButton(
         onClick = {
-            if (!enabled) return@TextButton
+            if (!enabled) return@OutlinedButton
             if (prefs.getBoolean(RENEW_EXPLAINED, false)) {
                 onRenewQueue()
             } else {
@@ -77,10 +85,18 @@ fun RenewQueueButton(
             }
         },
         enabled = enabled,
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, if (enabled) Orange else Mute.copy(alpha = 0.45f)),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = Orange,
+            disabledContentColor = Mute,
+        ),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+        modifier = Modifier.height(32.dp),
     ) {
         Text(
-            "Renew",
-            color = if (enabled) Orange else Mute,
+            "Renew queue",
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
         )
     }

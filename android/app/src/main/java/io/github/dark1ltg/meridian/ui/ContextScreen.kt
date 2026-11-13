@@ -164,7 +164,13 @@ private fun MatrixCell(
         Text(title, color = accent, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
         Text(subtitle, color = Mute, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (tracks.isEmpty()) {
-            Text("—", color = Mute, modifier = Modifier.padding(top = 12.dp), fontSize = 12.sp)
+            Text(
+                emptyMatrixCopy(title),
+                color = Cream,
+                modifier = Modifier.padding(top = 12.dp),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+            )
         } else {
             tracks.take(6).forEach { row ->
                 Text(

@@ -41,6 +41,7 @@ fun QueueScreen(
     currentId: Int?,
     queueIndex: Int,
     queueStale: Boolean = false,
+    bandLabel: String = "",
     renewEnabled: Boolean = true,
     onPlay: (Int) -> Unit,
     onLove: (Int) -> Unit,
@@ -63,10 +64,7 @@ fun QueueScreen(
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    when {
-                        queueStale -> "Lens moved · Renew or Play Context to sync"
-                        else -> "From lens · clock · matrix"
-                    },
+                    queueSourceLine(queueStale, bandLabel),
                     color = Mute,
                     fontSize = 12.sp,
                 )

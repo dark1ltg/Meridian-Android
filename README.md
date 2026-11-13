@@ -30,22 +30,22 @@ Meridian is a **local, offline** music player for Android. Every track becomes a
 Your library as a nebula. Pan the empty sky, aim the lens by dragging the ring, pinch inside to tighten the neighborhood, pinch outside to dig in up to ~5× toward your fingers. Zoomed-in titles appear and stagger when stars pack tight. The ring tracks at display refresh so aiming stays smooth on Titan-class screens.
 
 ### Listen & place
-Meridian takes a short listen of each song (intro / mid / late), then places it honestly on the map — the same mood math as the [Linux desktop app](https://github.com/dark1ltg/Meridian). Tags help; waveform decides. After you allow music access, Scan and Listen run for you. Play, skip, and the map keep working while Listen is running.
+Meridian takes a short listen of each song (intro / mid / late), then places it honestly on the map — the same mood math as the [Linux desktop app](https://github.com/dark1ltg/Meridian). Tags help; waveform decides. After you allow music access, Scan and Listen run for you. Play, skip, and the map keep working while Listen is running. Progress is a compact **Listening N / total** chip, not a banner across the sky.
 
 ### Context queue
-Point the lens, then play what lives there. **Renew** rebuilds the queue from the current listen matrix (not shuffle). **Play Context** syncs a stale queue to where you’re aiming without restarting the song that’s already playing. Modes — Focus, Wander, Charge, Dim — steer how adventurous the next picks feel.
+Point the lens, then play what lives there. **Renew queue** rebuilds from the current listen matrix (not shuffle). **Play Context** syncs a stale queue to where you’re aiming without restarting the song that’s already playing. Modes — Focus, Wander, Charge, Dim — steer how adventurous the next picks feel. The Queue tab keeps a mini-player above the tabs so skip/pause stay in reach.
 
 ### Matrix on the sky
-The Context tab shows NOW / DEEP / FILL / SHELF bands over the night sky — what’s close to the lens, what deepens the set, what fills gaps, what’s on the shelf.
+The Context tab shows NOW / DEEP / FILL / SHELF bands over the night sky — what’s close to the lens, what deepens the set, what fills gaps, what’s on the shelf. Empty bands say so in words (“Nothing parked yet”), not a dash.
 
 ### Playback that stays with you
-~3s dual-deck crossfade between tracks. Play keeps going when you switch apps; it pauses for calls, alarms, and other media. Navigation voice prompts duck the volume instead of stopping. Play and skip during a call wait until the call ends; Pause during a call does not let music come back on the line. Play after another music app still works. Next during a crossfade counts the song you are still hearing. Now Playing Previous / Next, lockscreen, and notification controls all move the queue. Skip, previous, and finish teach the map without leaving the phone. Play after a cold start loads the last current track.
+~3s dual-deck crossfade between tracks. Play keeps going when you switch apps; it pauses for calls, alarms, and other media. Navigation voice prompts duck the volume instead of stopping. Play and skip during a call wait until the call ends; Pause during a call does not let music come back on the line. Play after another music app still works. Next during a crossfade counts the song you are still hearing. Map and Queue mini-players, Now Playing, lockscreen, and notification Previous / Pause / Next all move the queue. Long titles wrap to two lines on the mini-player. Skip, previous, and finish teach the map without leaving the phone. Play after a cold start loads the last current track.
 
 ### Your folders, your grants
 Allow Music / MediaStore, or add folders with the system picker (SAF). Folder-only libraries still open after a cold start. Remove a folder and its tracks and grant leave with it. Unreadable files are skipped until a playable one opens. Shared-storage tracks keep artist, album, and duration. Import warns if a tree is larger than 50,000 files.
 
 ### Honest “why”
-Queue reasons use fit, importance, love, pins, play/skip history, time of day, and mode — so you can see why a track showed up.
+Why this track speaks in plain English: closest to where you aimed, whether it’s a fresh listen, and the time-of-day mode — not raw valence/energy floats. Fit still uses love, pins, play/skip history, and the clock band.
 
 ### Private by design
 Offline only. No telemetry, no account, no cloud sync. GPL-3.0.

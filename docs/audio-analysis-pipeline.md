@@ -26,7 +26,7 @@ That’s the “feel” it will use on the mood map.
 
 ### 1. Import (scan)
 
-Meridian walks your music folders and reads the **labels** on the files (title, artist, genre, and so on). On Android the job strip shows the **current filename** and **N of total** while that walk runs.
+Meridian walks your music folders and reads the **labels** on the files (title, artist, genre, and so on). On Android a compact chip shows **Listening N / total** (or Scanning / Rescanning) while that walk runs; tap × to cancel.
 
 - It does **not** do the deep listen yet.  
 - It may park a rough guess on the map from the genre/folder name.  

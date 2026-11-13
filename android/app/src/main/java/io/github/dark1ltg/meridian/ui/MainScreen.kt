@@ -21,8 +21,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Menu
@@ -31,9 +34,9 @@ import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -58,7 +61,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.dark1ltg.meridian.data.JobProgress
 import io.github.dark1ltg.meridian.data.TrackRow
 import io.github.dark1ltg.meridian.ui.theme.Card
 import io.github.dark1ltg.meridian.ui.theme.Cream
@@ -197,6 +199,8 @@ fun MainScreen(
                 onPlayContext = onPlayContext,
                 onOpenPlayer = { overlay = Overlay.NowPlaying },
                 onTogglePlay = onTogglePlay,
+                onSkip = onSkip,
+                onPrevious = onPrevious,
                 onMenu = { tab = AppTab.More },
                 onSearch = {
                     overlay = Overlay.Search
@@ -218,7 +222,14 @@ fun MainScreen(
                     .navigationBarsPadding(),
             ) {
                 if (showJob) {
-                    JobStrip(ui = ui, onCancel = onCancelJob)
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        JobChip(ui = ui, onCancel = onCancelJob)
+                    }
                 }
                 Box(Modifier.weight(1f)) {
                     when (tab) {
@@ -228,6 +239,7 @@ fun MainScreen(
                             currentId = snap.current?.id,
                             queueIndex = snap.queueIndex,
                             queueStale = snap.queueStale,
+                            bandLabel = snap.bandLabel,
                             renewEnabled = snap.trackCount > 0 && !ui.busy && !ui.job.running,
                             onPlay = onPlay,
                             onLove = loveWithFlash,
@@ -262,6 +274,16 @@ fun MainScreen(
                             onOpen = { overlay = Overlay.Settings(it) },
                         )
                     }
+                }
+                if (tab == AppTab.Queue) {
+                    MiniPlayer(
+                        track = snap.current,
+                        playing = ui.playing,
+                        onOpen = { overlay = Overlay.NowPlaying },
+                        onToggle = onTogglePlay,
+                        onSkip = onSkip,
+                        onPrevious = onPrevious,
+                    )
                 }
                 BottomNav(tab) { tab = it }
             }
@@ -345,68 +367,50 @@ fun MainScreen(
 }
 
 @Composable
-internal fun JobStrip(ui: UiState, onCancel: () -> Unit) {
+internal fun JobChip(ui: UiState, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     val job = ui.job
-    val label = jobLabel(job, ui.message)
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+    val label = jobChipLabel(job, ui.message)
+    Row(
+        modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xCC121A32))
+            .padding(start = 10.dp, end = 4.dp, top = 5.dp, bottom = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         if (job.total > 0) {
-            LinearProgressIndicator(
+            CircularProgressIndicator(
                 progress = { job.fraction },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.size(14.dp),
                 color = Orange,
-                trackColor = Color(0x22FFFFFF),
+                trackColor = Color(0x33FFFFFF),
+                strokeWidth = 2.dp,
             )
         } else {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
+            CircularProgressIndicator(
+                modifier = Modifier.size(14.dp),
                 color = Orange,
-                trackColor = Color(0x22FFFFFF),
+                trackColor = Color(0x33FFFFFF),
+                strokeWidth = 2.dp,
             )
         }
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f).padding(end = 8.dp)) {
-                Text(
-                    label,
-                    color = Mute,
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (job.total > 0 && job.current > 0) {
-                    Text(
-                        "${job.current} of ${job.total}",
-                        color = Cream,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-            }
-            Text(
-                "Cancel",
-                color = Orange,
-                fontSize = 12.sp,
-                modifier = Modifier.clickable(onClick = onCancel),
+        Text(
+            label,
+            color = Cream,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        IconButton(onClick = onCancel, modifier = Modifier.size(28.dp)) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Cancel",
+                tint = Mute,
+                modifier = Modifier.size(14.dp),
             )
         }
     }
-}
-
-internal fun jobLabel(job: JobProgress, fallback: String): String {
-    val raw = job.message.ifBlank { fallback }.trim()
-    if (raw.isEmpty()) {
-        return when (job.kind) {
-            "listen" -> "Listening…"
-            "rescan" -> "Rescanning…"
-            else -> "Scanning…"
-        }
-    }
-    // Engine may already embed "name — N of T"; keep the filename line clean.
-    val cut = raw.indexOf(" — ")
-    return if (cut > 0) raw.substring(0, cut) else raw
 }
 
 @Composable
@@ -441,8 +445,21 @@ private fun MapTopBar(onMenu: () -> Unit, onSearch: () -> Unit, mode: String) {
             )
             Spacer(Modifier.width(4.dp))
         }
-        IconButton(onClick = onSearch) {
-            Icon(Icons.Outlined.Search, contentDescription = "Search", tint = Ink)
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onSearch)
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Search", color = Mute, fontSize = 11.sp)
+            Spacer(Modifier.width(2.dp))
+            Icon(
+                Icons.Outlined.Search,
+                contentDescription = "Search",
+                tint = Ink,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
@@ -456,6 +473,8 @@ private fun MapTab(
     onPlayContext: () -> Unit,
     onOpenPlayer: () -> Unit,
     onTogglePlay: () -> Unit,
+    onSkip: () -> Unit,
+    onPrevious: () -> Unit,
     onMenu: () -> Unit,
     onSearch: () -> Unit,
     onTab: (AppTab) -> Unit,
@@ -505,9 +524,6 @@ private fun MapTab(
                 .navigationBarsPadding(),
         ) {
             MapTopBar(onMenu = onMenu, onSearch = onSearch, mode = snap.mode)
-            if (ui.busy || ui.job.running) {
-                JobStrip(ui = ui, onCancel = onCancelJob)
-            }
             Spacer(Modifier.weight(1f))
             Box(
                 Modifier
@@ -567,6 +583,8 @@ private fun MapTab(
                         playing = ui.playing,
                         onOpen = onOpenPlayer,
                         onToggle = onTogglePlay,
+                        onSkip = onSkip,
+                        onPrevious = onPrevious,
                     )
                     Button(
                         onClick = onPlayContext,
@@ -585,24 +603,36 @@ private fun MapTab(
                 }
             }
         }
+        if (ui.busy || ui.job.running) {
+            JobChip(
+                ui = ui,
+                onCancel = onCancelJob,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 52.dp, end = 12.dp),
+            )
+        }
     }
 }
 
 @Composable
-private fun MiniPlayer(
+internal fun MiniPlayer(
     track: TrackRow?,
     playing: Boolean,
     onOpen: () -> Unit,
     onToggle: () -> Unit,
+    onSkip: () -> Unit,
+    onPrevious: () -> Unit,
 ) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(18.dp))
             .background(Card)
             .clickable(onClick = onOpen)
-            .padding(10.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TrackArt(
@@ -612,11 +642,13 @@ private fun MiniPlayer(
             corner = 10.dp,
             useAlbumArt = false,
         )
-        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+        Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp)) {
             Text(
                 track?.title ?: "Nothing playing",
                 color = Ink,
-                maxLines = 1,
+                fontSize = 14.sp,
+                lineHeight = 17.sp,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Medium,
             )
@@ -628,12 +660,31 @@ private fun MiniPlayer(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        IconButton(onClick = onToggle) {
-            Icon(
-                if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (playing) "Pause" else "Play",
-                tint = Cream,
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onPrevious, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Default.SkipPrevious,
+                    contentDescription = "Previous",
+                    tint = Cream,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            IconButton(onClick = onToggle, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (playing) "Pause" else "Play",
+                    tint = Cream,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            IconButton(onClick = onSkip, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Default.SkipNext,
+                    contentDescription = "Next",
+                    tint = Cream,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
     }
 }

@@ -14,6 +14,13 @@ sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
 
+## What’s new in versionCode 159
+
+- Mini-player on Map and Queue has Previous / Pause / Next; long titles wrap to two lines
+- Listen progress is a compact chip instead of a full-width banner; Search is labeled next to the icon
+- Queue says “From where you aimed · evening” with an outlined **Renew queue** control
+- Empty matrix cells say “Nothing parked yet”; Why this track is plain English (no raw valence/confidence floats)
+
 ## What’s new in versionCode 158
 
 - Pause during a call no longer lets Play put music **on the call**; Play after another music app works again
