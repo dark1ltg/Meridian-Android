@@ -7,12 +7,16 @@ All notable Meridian releases are listed here.
 
 ## [1.3.6](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) — Android APK + source, 2026-11-12
 
-Published on this repo’s Releases page (**versionCode 160** / versionName 1.3.6). Feature overview: [README](README.md).
+Published on this repo’s Releases page (**versionCode 161** / versionName 1.3.6). Feature overview: [README](README.md).
 
 - **`Meridian-1.3.6-arm64.apk`** (~36.2 MB; SHA-256 `ca672dff6224e23f1fd01be8ffcc4399fb761f8b375dca4853e29c65f49167d5`) — Android 8.0+ / arm64 (aubio + Media3 FFmpeg JNI + meridian_pcm)
 - **`Meridian-1.3.6-src.tar.gz`** (~5.5 MB; SHA-256 `a2a255d75510f856a2c3e523ae11c989d1fb46af51aea0c4bc982aa5d1e7c652`) — full tree at the release commit
 
 Aimed at Unihertz Titan 2 class hardware (1440×1440, Dimensity 7300).
+
+### versionCode 161
+- **Skip during fade**: Next while A→B is overlapping skips B (the incoming song), not a no-op on A; repeating the incoming id does not abort the ~3s fade
+- **DualDeck**: `setMediaItem` alone starts the overlap (no follow-up `prepare`/`play`); `addMediaItem` / `replaceMediaItem` stay on DualDeck; session `isPlaying` stays true while either deck is still audible
 
 ### versionCode 160
 - **Now Playing Next / Previous**: UI skip drives the context queue then DualDeck.play (MediaController `seekToNext` no-ops on the single-item timeline); lockscreen / notification skip unchanged

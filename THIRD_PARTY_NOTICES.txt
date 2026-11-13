@@ -110,7 +110,7 @@ Rebuild:  android/scripts/build-media3-ffmpeg.sh
 ----------------------------------------------------------------------------
 meridian_pcm (libmeridian_pcm.so) on Android
 ----------------------------------------------------------------------------
-Purpose:  Preferred Listen decoder in v1.3.6 versionCode 160 — FFmpeg avformat
+Purpose:  Preferred Listen decoder in v1.3.6 versionCode 161 — FFmpeg avformat
           seek + swresample to mono float32 LE @ 11025 Hz (one open per file).
           MediaCodec, then libffmpegJNI.so, are fallbacks.
 License:  Same FFmpeg n6.1.1 stack as libffmpegJNI.so (GPL combined work).

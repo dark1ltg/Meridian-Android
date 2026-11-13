@@ -1,4 +1,4 @@
-Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-12**, **versionCode 160**).
+Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://github.com/dark1ltg/Meridian-Android/releases/tag/v1.3.6) page (refreshed **2026-11-12**, **versionCode 161**).
 
 ## Downloads
 
@@ -13,6 +13,11 @@ Meridian Android **1.3.6** — APK + source on this repo’s [Releases](https://
 sha256sum -c Meridian-1.3.6-arm64.apk.sha256
 adb install -r Meridian-1.3.6-arm64.apk
 ```
+
+## What’s new in versionCode 161
+
+- Next during a crossfade skips the incoming song instead of doing nothing
+- Repeating the current track does not cut the ~3s overlap; Pause stays shown while either deck is still playing
 
 ## What’s new in versionCode 160
 
@@ -42,7 +47,7 @@ Full feature overview: [README](https://github.com/dark1ltg/Meridian-Android#hig
 
 ## Notes
 
-- Minimum **Android 8.0 (API 26)**; **versionCode 160** / versionName 1.3.6
+- Minimum **Android 8.0 (API 26)**; **versionCode 161** / versionName 1.3.6
 - arm64-v8a only (Titan 2 / modern phones)
 - Signed with the public sideload key in `android/keystore/` (cert SHA-256 `4af7989ae094e7a5baa426613cdfa67cff09a6082fa18f4997144647b50c28e9`)
 - Listen prefers **native PCM** (`libmeridian_pcm.so`), then **MediaCodec**, then **Media3 FFmpeg** when the platform codec cannot open the file
